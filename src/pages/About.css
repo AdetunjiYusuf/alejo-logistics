@@ -1,0 +1,165 @@
+.about-page {
+  background: #fff;
+  color: #172033;
+}
+
+/* HERO */
+
+.about-hero {
+  min-height: 500px;
+  padding: 80px 8%;
+  background:
+    linear-gradient(90deg, #fff7f0 0%, #fff7f0 55%, #fff 100%);
+
+  display: flex;
+  align-items: center;
+}
+
+.about-hero > div {
+  max-width: 900px;
+}
+
+.about-hero span,
+.about-story > span {
+  color: #ff6b00;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.about-hero h1 {
+  max-width: 800px;
+  font-size: clamp(48px, 6vw, 76px);
+  line-height: 0.98;
+  margin: 20px 0;
+}
+
+.about-hero p {
+  max-width: 650px;
+  color: #697384;
+  font-size: 19px;
+  line-height: 1.7;
+}
+
+/* STORY */
+
+.about-content {
+  max-width: 1200px;
+  margin: auto;
+  padding: 110px 40px;
+
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 90px;
+  align-items: start;
+}
+
+.about-story {
+  position: sticky;
+  top: 120px;
+}
+
+.about-story h2 {
+  font-size: 43px;
+  line-height: 1.1;
+  margin: 15px 0 25px;
+}
+
+.about-story p {
+  color: #697384;
+  line-height: 1.8;
+  margin-bottom: 18px;
+}
+
+/* VALUES */
+
+.about-values {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.about-values div {
+  min-height: 190px;
+  padding: 30px;
+
+  background: #fffaf6;
+  border-radius: 16px;
+  border: 1px solid #f4e7dc;
+
+  transition: 0.25s;
+}
+
+.about-values div:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(255, 107, 0, 0.1);
+}
+
+.about-values strong {
+  color: #ff6b00;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.about-values h3 {
+  font-size: 21px;
+  margin: 15px 0 8px;
+}
+
+.about-values p {
+  color: #737d8b;
+  line-height: 1.6;
+}
+
+/* CTA */
+
+.about-cta {
+  padding: 75px 8%;
+  background: #ff6b00;
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+}
+
+.about-cta h2 {
+  font-size: 40px;
+  margin-bottom: 5px;
+}
+
+.about-cta p {
+  opacity: 0.9;
+}
+
+.about-cta a {
+  background: white;
+  color: #ff6b00;
+  padding: 15px 28px;
+  border-radius: 8px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* MOBILE */
+
+@media (max-width: 800px) {
+  .about-content {
+    grid-template-columns: 1fr;
+    gap: 50px;
+  }
+
+  .about-story {
+    position: static;
+  }
+
+  .about-values {
+    grid-template-columns: 1fr;
+  }
+
+  .about-cta {
+    flex-direction: column;
+    text-align: center;
+  }
+}

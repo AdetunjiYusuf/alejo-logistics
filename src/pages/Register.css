@@ -1,0 +1,305 @@
+.register-page {
+  min-height: 100vh;
+  background: #f6f7f8;
+  display: grid;
+  grid-template-columns: 42% 58%;
+}
+
+
+/* LEFT SIDE */
+
+.register-intro {
+  background: #10233f;
+  color: white;
+  padding: 50px 8%;
+  display: flex;
+  flex-direction: column;
+}
+
+.register-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.register-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #ff6b00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.register-brand strong {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.register-brand div span {
+  display: block;
+  color: #aeb8c5;
+  font-size: 8px;
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+.register-intro-content {
+  max-width: 440px;
+  margin: auto 0;
+}
+
+.register-kicker {
+  color: #ff7a19;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+}
+
+.register-intro h1 {
+  font-size: clamp(40px, 4vw, 60px);
+  line-height: 1.05;
+  margin: 0;
+  letter-spacing: -2px;
+}
+
+.register-intro h1 span {
+  color: #ff6b00;
+}
+
+.register-intro-content > p:not(.register-kicker) {
+  color: #bdc7d2;
+  font-size: 14px;
+  line-height: 1.7;
+  max-width: 400px;
+  margin-top: 20px;
+}
+
+
+/* BENEFITS */
+
+.register-benefits {
+  margin-top: 35px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.register-benefits div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.register-benefits span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 107, 0, 0.15);
+  color: #ff6b00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.register-benefits p {
+  margin: 0;
+  color: #d5dce4;
+  font-size: 12px;
+}
+
+
+/* FORM SIDE */
+
+.register-form-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 45px 7%;
+}
+
+.register-card {
+  width: 100%;
+  max-width: 570px;
+  background: white;
+  border: 1px solid #e3e7eb;
+  border-radius: 14px;
+  padding: 38px;
+  box-shadow: 0 15px 45px rgba(16, 35, 63, 0.06);
+}
+
+.register-card-header {
+  margin-bottom: 25px;
+}
+
+.register-card-header p {
+  color: #ff6b00;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
+  margin: 0 0 8px;
+}
+
+.register-card-header h2 {
+  color: #10233f;
+  font-size: 26px;
+  margin: 0;
+}
+
+.register-card-header span {
+  display: block;
+  color: #818995;
+  font-size: 11px;
+  margin-top: 7px;
+}
+
+
+/* ERROR */
+
+.register-error {
+  background: #fff1f0;
+  border: 1px solid #ffd6d2;
+  color: #c0392b;
+  border-radius: 7px;
+  padding: 11px 13px;
+  font-size: 11px;
+  margin-bottom: 18px;
+}
+
+
+/* FORM */
+
+.register-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.register-group {
+  margin-bottom: 17px;
+}
+
+.register-group label {
+  display: block;
+  color: #26384f;
+  font-size: 10px;
+  font-weight: 800;
+  margin-bottom: 7px;
+}
+
+.register-group input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #dfe3e7;
+  border-radius: 7px;
+  padding: 12px;
+  background: #fff;
+  color: #10233f;
+  font-size: 12px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.register-group input:focus {
+  border-color: #ff6b00;
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.08);
+}
+
+.register-group input::placeholder {
+  color: #a2a9b1;
+}
+
+
+/* BUTTON */
+
+.register-submit {
+  width: 100%;
+  border: none;
+  border-radius: 7px;
+  padding: 14px;
+  background: #ff6b00;
+  color: white;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  margin-top: 3px;
+  transition: 0.2s;
+}
+
+.register-submit:hover {
+  background: #e85e00;
+  transform: translateY(-1px);
+}
+
+
+/* LOGIN */
+
+.register-login {
+  border-top: 1px solid #edf0f2;
+  margin-top: 23px;
+  padding-top: 20px;
+  text-align: center;
+  font-size: 11px;
+  color: #818995;
+}
+
+.register-login button {
+  border: none;
+  background: none;
+  color: #ff6b00;
+  font-weight: 900;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+
+/* MOBILE */
+
+@media (max-width: 850px) {
+
+  .register-page {
+    grid-template-columns: 1fr;
+  }
+
+  .register-intro {
+    min-height: 320px;
+    padding: 30px 25px;
+  }
+
+  .register-intro-content {
+    margin-top: 60px;
+  }
+
+  .register-intro h1 {
+    font-size: 38px;
+  }
+
+  .register-benefits {
+    display: none;
+  }
+
+  .register-form-side {
+    padding: 30px 20px;
+  }
+
+}
+
+@media (max-width: 550px) {
+
+  .register-card {
+    padding: 25px 20px;
+  }
+
+  .register-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+}

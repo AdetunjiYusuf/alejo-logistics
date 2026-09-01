@@ -1,0 +1,1867 @@
+/* =========================================================
+   ALEJO LOGISTICS
+   BOOK DELIVERY
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+.booking-page {
+  min-height: 100vh;
+  background: #f5f7f9;
+  color: #17202a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.booking-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
+  width: 250px;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 28px 18px;
+
+  background: #17202a;
+
+  z-index: 100;
+}
+
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  padding: 0 8px 25px;
+
+  border-bottom: 1px solid
+    rgba(255, 255, 255, 0.1);
+}
+
+
+.brand-logo {
+  width: 39px;
+  height: 39px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 11px;
+
+  background: #f57c00;
+
+  color: white;
+
+  font-size: 19px;
+  font-weight: 900;
+}
+
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.brand-text strong {
+  color: white;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+
+.brand-text span {
+  margin-top: 2px;
+
+  color: #89939d;
+
+  font-size: 9px;
+
+  letter-spacing: 1.5px;
+}
+
+
+.sidebar-close {
+  display: none;
+}
+
+
+/* =========================================================
+   NAV
+========================================================= */
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+
+  margin-top: 28px;
+}
+
+
+.sidebar-nav button,
+.sidebar-bottom button {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  min-height: 48px;
+
+  padding: 0 13px;
+
+  border: 0;
+  border-radius: 9px;
+
+  background: transparent;
+
+  color: #aeb7bf;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+
+.sidebar-nav button span,
+.sidebar-bottom button span {
+  width: 20px;
+
+  text-align: center;
+
+  font-size: 13px;
+}
+
+
+.sidebar-nav button b,
+.sidebar-bottom button b {
+  font-size: 12px;
+}
+
+
+.sidebar-nav button:hover,
+.sidebar-bottom button:hover {
+  background: #222e38;
+  color: white;
+}
+
+
+.sidebar-nav button.active {
+  background: #26323d;
+
+  color: white;
+
+  border-left: 3px solid
+    #f57c00;
+}
+
+
+.sidebar-bottom {
+  margin-top: auto;
+
+  padding-top: 18px;
+
+  border-top: 1px solid
+    rgba(255, 255, 255, 0.1);
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.booking-main {
+  min-height: 100vh;
+
+  margin-left: 250px;
+
+  padding: 34px 38px;
+}
+
+
+.booking-header {
+  margin-bottom: 25px;
+}
+
+
+.booking-label {
+  margin: 0 0 7px;
+
+  color: #f57c00;
+
+  font-size: 11px;
+
+  font-weight: 900;
+
+  letter-spacing: 1.6px;
+}
+
+
+.booking-header h1 {
+  margin: 0;
+
+  font-size: 32px;
+
+  line-height: 1.15;
+}
+
+
+.booking-subtitle {
+  margin: 8px 0 0;
+
+  color: #707b85;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   MOBILE TOP BAR
+========================================================= */
+
+.mobile-topbar {
+  display: none;
+}
+
+
+/* =========================================================
+   STEPS
+========================================================= */
+
+.steps-container {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+
+  margin-bottom: 25px;
+
+  padding: 18px 20px;
+
+  border: 1px solid #e2e6ea;
+
+  border-radius: 14px;
+
+  background: white;
+}
+
+
+.step-item {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-width: 0;
+}
+
+
+.step-number {
+  width: 32px;
+  height: 32px;
+
+  flex: 0 0 32px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: #edf0f2;
+
+  color: #737d86;
+
+  font-size: 12px;
+
+  font-weight: 900;
+}
+
+
+.step-item.active
+.step-number {
+  background: #f57c00;
+
+  color: white;
+}
+
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+}
+
+
+.step-content strong {
+  color: #303a43;
+
+  font-size: 12px;
+}
+
+
+.step-content span {
+  margin-top: 3px;
+
+  color: #929aa2;
+
+  font-size: 10px;
+}
+
+
+.step-connector {
+  height: 1px;
+
+  flex: 1;
+
+  margin: 0 15px;
+
+  background: #e1e5e8;
+}
+
+
+/* =========================================================
+   CONTENT GRID
+========================================================= */
+
+.booking-content {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    310px;
+
+  align-items: start;
+
+  gap: 22px;
+}
+
+
+/* =========================================================
+   BOOKING CARD
+========================================================= */
+
+.booking-card {
+  overflow: hidden;
+
+  border: 1px solid #e1e5e9;
+
+  border-radius: 16px;
+
+  background: white;
+
+  box-shadow:
+    0 8px 28px
+    rgba(20, 30, 40, 0.04);
+}
+
+
+.card-section {
+  padding: 25px;
+
+  border-bottom: 1px solid #edf0f2;
+}
+
+
+.card-section:last-of-type {
+  border-bottom: 0;
+}
+
+
+.card-section-header {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 13px;
+
+  margin-bottom: 23px;
+}
+
+
+.section-badge {
+  width: 31px;
+  height: 31px;
+
+  flex: 0 0 31px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 8px;
+
+  background: #fff1e3;
+
+  color: #e66d00;
+
+  font-size: 10px;
+
+  font-weight: 900;
+}
+
+
+.card-section-header h2 {
+  margin: 0;
+
+  font-size: 18px;
+}
+
+
+.card-section-header p {
+  margin: 5px 0 0;
+
+  color: #7c858e;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 7px;
+
+  color: #37414a;
+
+  font-size: 12px;
+
+  font-weight: 800;
+}
+
+
+.required {
+  margin-left: 3px;
+
+  color: #e64a4a;
+}
+
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+
+  border: 1px solid #d9dee3;
+
+  border-radius: 9px;
+
+  background: white;
+
+  color: #27313a;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  outline: none;
+
+  transition: 0.2s ease;
+}
+
+
+.form-group input,
+.form-group select {
+  height: 43px;
+
+  padding: 0 12px;
+}
+
+
+.form-group textarea {
+  min-height: 90px;
+
+  padding: 11px 12px;
+
+  resize: vertical;
+
+  line-height: 1.5;
+}
+
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #f57c00;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(245, 124, 0, 0.1);
+}
+
+
+.form-group small {
+  display: block;
+
+  margin-top: 6px;
+
+  color: #9099a1;
+
+  font-size: 10px;
+
+  line-height: 1.4;
+}
+
+
+.form-row {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 14px;
+}
+
+
+/* =========================================================
+   PAYMENT
+========================================================= */
+
+.payment-options {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 12px;
+}
+
+
+.payment-option {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 12px;
+
+  min-height: 88px;
+
+  padding: 15px;
+
+  border: 1px solid #dfe3e7;
+
+  border-radius: 11px;
+
+  background: white;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+
+.payment-option:hover {
+  border-color: #f57c00;
+}
+
+
+.payment-option.selected {
+  border-color: #f57c00;
+
+  background: #fff9f2;
+
+  box-shadow:
+    0 0 0 2px
+    rgba(245, 124, 0, 0.08);
+}
+
+
+.payment-icon {
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 9px;
+
+  background: #edf6ff;
+
+  color: #2871ae;
+
+  font-size: 18px;
+
+  font-weight: 900;
+}
+
+
+.payment-icon.cash {
+  background: #fff2df;
+
+  color: #a45e00;
+}
+
+
+.payment-text {
+  min-width: 0;
+
+  flex: 1;
+}
+
+
+.payment-text strong {
+  display: block;
+
+  color: #28323b;
+
+  font-size: 12px;
+}
+
+
+.payment-text span {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #858e97;
+
+  font-size: 10px;
+
+  line-height: 1.4;
+}
+
+
+.payment-check {
+  width: 21px;
+  height: 21px;
+
+  display: grid;
+  place-items: center;
+
+  border: 1px solid #d5dbe0;
+
+  border-radius: 50%;
+
+  color: #f57c00;
+
+  font-size: 12px;
+
+  font-weight: 900;
+}
+
+
+.payment-option.selected
+.payment-check {
+  border-color: #f57c00;
+
+  background: #f57c00;
+
+  color: white;
+}
+
+
+/* =========================================================
+   TRANSFER
+========================================================= */
+
+.transfer-details {
+  margin-top: 16px;
+
+  padding: 18px;
+
+  border: 1px solid #f0d9bf;
+
+  border-radius: 11px;
+
+  background: #fffaf5;
+}
+
+
+.transfer-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 18px;
+}
+
+
+.transfer-header strong {
+  font-size: 13px;
+}
+
+
+.transfer-header p {
+  margin: 5px 0 0;
+
+  color: #8a9198;
+
+  font-size: 11px;
+}
+
+
+.secure-badge {
+  align-self: flex-start;
+
+  padding: 5px 8px;
+
+  border-radius: 5px;
+
+  background: #e7f7ef;
+
+  color: #21734d;
+
+  font-size: 8px;
+
+  font-weight: 900;
+}
+
+
+.bank-details-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 10px;
+
+  margin-bottom: 17px;
+}
+
+
+.bank-details-grid > div {
+  padding: 12px;
+
+  border: 1px solid #eadfd4;
+
+  border-radius: 8px;
+
+  background: white;
+}
+
+
+.bank-details-grid small {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #9299a0;
+
+  font-size: 8px;
+
+  font-weight: 900;
+}
+
+
+.bank-details-grid strong {
+  font-size: 11px;
+
+  word-break: break-word;
+}
+
+
+.account-number {
+  letter-spacing: 1px;
+}
+
+
+.transfer-form-row {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 14px;
+}
+
+
+.amount-input {
+  display: flex;
+
+  align-items: center;
+
+  overflow: hidden;
+
+  height: 43px;
+
+  border: 1px solid #d9dee3;
+
+  border-radius: 9px;
+
+  background: white;
+}
+
+
+.amount-input span {
+  padding-left: 12px;
+
+  color: #68727b;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+
+.amount-input input {
+  height: 100%;
+
+  border: 0 !important;
+
+  box-shadow: none !important;
+}
+
+
+.transfer-notice {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 9px;
+
+  margin-top: 4px;
+
+  padding: 11px;
+
+  border-radius: 8px;
+
+  background: #fff3df;
+}
+
+
+.transfer-notice > span {
+  width: 18px;
+  height: 18px;
+
+  flex: 0 0 18px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: #f3a541;
+
+  color: white;
+
+  font-size: 10px;
+
+  font-weight: 900;
+}
+
+
+.transfer-notice p {
+  margin: 0;
+
+  color: #8a5a19;
+
+  font-size: 10px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.error-message {
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 9px;
+
+  margin: 18px 25px 0;
+
+  padding: 12px;
+
+  border: 1px solid #ffd0d0;
+
+  border-radius: 9px;
+
+  background: #fff2f2;
+
+  color: #a63232;
+}
+
+
+.error-message > span {
+  width: 19px;
+  height: 19px;
+
+  flex: 0 0 19px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: #d94b4b;
+
+  color: white;
+
+  font-size: 10px;
+
+  font-weight: 900;
+}
+
+
+.error-message p {
+  margin: 1px 0 0;
+
+  font-size: 11px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   PRICE
+========================================================= */
+
+.price-display {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 12px;
+
+  margin: 20px 25px;
+
+  padding: 17px;
+
+  border: 1px solid #dcefe4;
+
+  border-radius: 11px;
+
+  background: #f7fcf9;
+}
+
+
+.price-display > div {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+
+.price-display span {
+  color: #718078;
+
+  font-size: 10px;
+
+  font-weight: 700;
+}
+
+
+.price-display strong {
+  color: #21734d;
+
+  font-size: 20px;
+}
+
+
+/* =========================================================
+   ACTION BUTTONS
+========================================================= */
+
+.action-buttons {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 12px;
+
+  padding: 0 25px 25px;
+}
+
+
+.action-buttons button {
+  min-height: 47px;
+
+  border: 0;
+
+  border-radius: 9px;
+
+  font-size: 12px;
+
+  font-weight: 900;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+
+.action-buttons button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+
+.action-buttons button:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.55;
+}
+
+
+.btn-calculate {
+  background: #eef1f3;
+
+  color: #3e4851;
+}
+
+
+.btn-book {
+  background: #f57c00;
+
+  color: white;
+
+  box-shadow:
+    0 7px 17px
+    rgba(245, 124, 0, 0.18);
+}
+
+
+/* =========================================================
+   RIGHT SIDEBAR
+========================================================= */
+
+.booking-sidebar-right {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 15px;
+}
+
+
+.info-card {
+  overflow: hidden;
+
+  padding: 19px;
+
+  border: 1px solid #e1e5e8;
+
+  border-radius: 14px;
+
+  background: white;
+
+  box-shadow:
+    0 6px 20px
+    rgba(20, 30, 40, 0.035);
+}
+
+
+.info-card h3 {
+  margin: 0 0 17px;
+
+  font-size: 15px;
+}
+
+
+/* =========================================================
+   MAP
+========================================================= */
+
+.map-card {
+  position: relative;
+
+  height: 220px;
+
+  overflow: hidden;
+
+  padding: 0;
+
+  background: #eef3f0;
+}
+
+
+.map-grid {
+  position: absolute;
+
+  inset: 0;
+
+  opacity: 0.5;
+
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(80, 100, 90, 0.08)
+        1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      rgba(80, 100, 90, 0.08)
+        1px,
+      transparent 1px
+    );
+
+  background-size: 28px 28px;
+
+  transform: rotate(-5deg)
+    scale(1.2);
+}
+
+
+.map-route-visual {
+  position: absolute;
+
+  top: 55px;
+  left: 45px;
+  right: 45px;
+
+  display: flex;
+
+  align-items: center;
+}
+
+
+.map-point {
+  width: 13px;
+  height: 13px;
+
+  border: 3px solid white;
+
+  border-radius: 50%;
+
+  background: #f57c00;
+
+  box-shadow:
+    0 2px 7px
+    rgba(0, 0, 0, 0.2);
+
+  z-index: 2;
+}
+
+
+.map-point.destination {
+  background: #2678b5;
+}
+
+
+.route-line {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  flex: 1;
+
+  height: 3px;
+
+  margin: 0 8px;
+
+  background: #f57c00;
+}
+
+
+.route-line span {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: white;
+}
+
+
+.map-label {
+  position: absolute;
+
+  left: 16px;
+  bottom: 15px;
+
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 7px 9px;
+
+  border-radius: 7px;
+
+  background: rgba(255,255,255,0.9);
+
+  color: #4b5861;
+
+  font-size: 10px;
+
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   BENEFITS
+========================================================= */
+
+.benefit-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 13px;
+}
+
+
+.benefit-item {
+  display: flex;
+
+  align-items: center;
+
+  gap: 9px;
+}
+
+
+.benefit-item > span {
+  width: 22px;
+  height: 22px;
+
+  flex: 0 0 22px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 50%;
+
+  background: #e7f7ef;
+
+  color: #21734d;
+
+  font-size: 10px;
+
+  font-weight: 900;
+}
+
+
+.benefit-item p {
+  margin: 0;
+
+  color: #59636c;
+
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   PRICE SUMMARY
+========================================================= */
+
+.price-summary {
+  background: #fff8ef;
+
+  border-color: #ffd9b6;
+}
+
+
+.price-summary > small {
+  display: block;
+
+  color: #9a704d;
+
+  font-size: 9px;
+
+  font-weight: 900;
+
+  letter-spacing: 1px;
+}
+
+
+.price-summary > strong {
+  display: block;
+
+  margin-top: 8px;
+
+  color: #e66d00;
+
+  font-size: 28px;
+}
+
+
+.price-summary > span {
+  display: block;
+
+  margin-top: 5px;
+
+  color: #8a7969;
+
+  font-size: 10px;
+}
+
+
+.payment-summary {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 18px;
+
+  padding-top: 13px;
+
+  border-top: 1px solid
+    #ecdac7;
+}
+
+
+.payment-summary small {
+  color: #9a704d;
+
+  font-size: 8px;
+
+  font-weight: 900;
+}
+
+
+.payment-summary b {
+  color: #4e463e;
+
+  font-size: 10px;
+}
+
+
+/* =========================================================
+   TABLET
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .booking-main {
+    padding: 28px;
+  }
+
+
+  .booking-content {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+
+  .booking-sidebar-right {
+    display: grid;
+
+    grid-template-columns:
+      1fr 1fr;
+  }
+
+
+  .map-card {
+    height: 210px;
+  }
+
+
+  .price-summary {
+    grid-column: 1 / -1;
+  }
+
+}
+
+
+/* =========================================================
+   SMALL TABLET
+========================================================= */
+
+@media (max-width: 800px) {
+
+  .booking-sidebar {
+    width: 280px;
+
+    transform: translateX(-100%);
+
+    transition:
+      transform 0.25s ease;
+
+    box-shadow:
+      12px 0 35px
+      rgba(0, 0, 0, 0.2);
+  }
+
+
+  .booking-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+
+  .sidebar-close {
+    display: grid;
+
+    place-items: center;
+
+    width: 30px;
+    height: 30px;
+
+    margin-left: auto;
+
+    border: 0;
+
+    border-radius: 7px;
+
+    background: #26323d;
+
+    color: white;
+
+    font-size: 20px;
+
+    cursor: pointer;
+  }
+
+
+  .mobile-menu-overlay {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 90;
+
+    background:
+      rgba(10, 15, 20, 0.55);
+  }
+
+
+  .booking-main {
+    margin-left: 0;
+
+    padding: 18px;
+  }
+
+
+  .mobile-topbar {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    height: 54px;
+
+    margin-bottom: 18px;
+  }
+
+
+  .hamburger-button {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    border: 1px solid #dfe3e6;
+
+    border-radius: 9px;
+
+    background: white;
+
+    cursor: pointer;
+  }
+
+
+  .hamburger-button span {
+    width: 19px;
+    height: 2px;
+
+    border-radius: 3px;
+
+    background: #27313a;
+  }
+
+
+  .mobile-brand {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+  }
+
+
+  .mobile-brand-logo {
+    width: 35px;
+    height: 35px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 9px;
+
+    background: #f57c00;
+
+    color: white;
+
+    font-weight: 900;
+  }
+
+
+  .mobile-brand div:last-child {
+    display: flex;
+
+    flex-direction: column;
+  }
+
+
+  .mobile-brand strong {
+    color: #26313a;
+
+    font-size: 13px;
+  }
+
+
+  .mobile-brand span {
+    color: #89939c;
+
+    font-size: 8px;
+
+    letter-spacing: 1px;
+  }
+
+
+  .booking-header {
+    margin-bottom: 18px;
+  }
+
+
+  .booking-header h1 {
+    font-size: 27px;
+  }
+
+
+  .steps-container {
+    overflow-x: auto;
+
+    padding: 14px;
+
+    gap: 0;
+  }
+
+
+  .step-item {
+    min-width: 175px;
+  }
+
+
+  .step-content span {
+    display: none;
+  }
+
+
+  .step-connector {
+    min-width: 20px;
+
+    margin: 0 7px;
+  }
+
+
+  .booking-sidebar-right {
+    grid-template-columns:
+      1fr;
+  }
+
+
+  .price-summary {
+    grid-column: auto;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+  .booking-main {
+    padding: 12px;
+  }
+
+
+  .mobile-topbar {
+    margin-bottom: 12px;
+  }
+
+
+  .booking-label {
+    font-size: 9px;
+  }
+
+
+  .booking-header h1 {
+    font-size: 24px;
+  }
+
+
+  .booking-subtitle {
+    font-size: 12px;
+
+    line-height: 1.5;
+  }
+
+
+  .steps-container {
+    padding: 12px;
+
+    border-radius: 11px;
+  }
+
+
+  .step-item {
+    min-width: 145px;
+  }
+
+
+  .step-number {
+    width: 27px;
+    height: 27px;
+
+    flex-basis: 27px;
+  }
+
+
+  .step-content strong {
+    font-size: 10px;
+  }
+
+
+  .booking-card {
+    border-radius: 12px;
+  }
+
+
+  .card-section {
+    padding: 17px 15px;
+  }
+
+
+  .card-section-header {
+    margin-bottom: 19px;
+  }
+
+
+  .card-section-header h2 {
+    font-size: 16px;
+  }
+
+
+  .card-section-header p {
+    font-size: 10px;
+  }
+
+
+  .form-row {
+    grid-template-columns: 1fr;
+
+    gap: 0;
+  }
+
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+
+  .form-group input,
+  .form-group select {
+    height: 44px;
+  }
+
+
+  .form-group textarea {
+    min-height: 92px;
+  }
+
+
+  .payment-options {
+    grid-template-columns: 1fr;
+  }
+
+
+  .payment-option {
+    min-height: 80px;
+  }
+
+
+  .transfer-details {
+    padding: 13px;
+  }
+
+
+  .transfer-header {
+    flex-direction: column;
+
+    gap: 9px;
+  }
+
+
+  .bank-details-grid {
+    grid-template-columns: 1fr;
+  }
+
+
+  .transfer-form-row {
+    grid-template-columns: 1fr;
+
+    gap: 0;
+  }
+
+
+  .price-display {
+    grid-template-columns: 1fr;
+
+    margin: 16px 15px;
+  }
+
+
+  .price-display strong {
+    font-size: 19px;
+  }
+
+
+  .action-buttons {
+    grid-template-columns: 1fr;
+
+    padding: 0 15px 17px;
+  }
+
+
+  .action-buttons button {
+    min-height: 48px;
+  }
+
+
+  .error-message {
+    margin: 16px 15px 0;
+  }
+
+
+  .booking-sidebar-right {
+    gap: 12px;
+  }
+
+
+  .info-card {
+    border-radius: 11px;
+  }
+
+
+  .map-card {
+    height: 180px;
+  }
+
+}
+
+
+/* =========================================================
+   VERY SMALL PHONES
+========================================================= */
+
+@media (max-width: 380px) {
+
+  .booking-main {
+    padding: 9px;
+  }
+
+
+  .mobile-topbar {
+    height: 48px;
+  }
+
+
+  .hamburger-button {
+    width: 39px;
+    height: 39px;
+  }
+
+
+  .mobile-brand-logo {
+    width: 32px;
+    height: 32px;
+  }
+
+
+  .booking-header h1 {
+    font-size: 22px;
+  }
+
+
+  .steps-container {
+    padding: 10px;
+  }
+
+
+  .step-item {
+    min-width: 125px;
+  }
+
+
+  .step-content strong {
+    font-size: 9px;
+  }
+
+
+  .card-section {
+    padding: 14px 12px;
+  }
+
+
+  .payment-option {
+    padding: 12px;
+  }
+
+
+  .payment-text span {
+    font-size: 9px;
+  }
+
+
+  .action-buttons {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+}

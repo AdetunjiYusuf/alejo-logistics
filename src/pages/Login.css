@@ -1,0 +1,179 @@
+.auth-page {
+  min-height: calc(100vh - 80px);
+  background: #f7f8fa;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 50px 20px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 430px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+
+  padding: 40px;
+
+  box-shadow: 0 12px 35px rgba(16, 35, 63, 0.08);
+}
+
+.auth-label {
+  color: #ff6b00;
+
+  font-size: 11px;
+  font-weight: 800;
+
+  letter-spacing: 2px;
+
+  margin: 0 0 10px;
+}
+
+.auth-card h1 {
+  color: #10233f;
+
+  font-size: 32px;
+
+  margin: 0 0 8px;
+}
+
+.auth-subtitle {
+  color: #737d89;
+
+  font-size: 14px;
+  line-height: 1.6;
+
+  margin-bottom: 30px;
+}
+
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-card label {
+  color: #26384f;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  margin-bottom: 7px;
+}
+
+.auth-card input {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 14px 15px;
+
+  margin-bottom: 20px;
+
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+
+  background: #ffffff;
+
+  color: #10233f;
+
+  font-size: 14px;
+
+  outline: none;
+
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-card input:focus {
+  border-color: #ff6b00;
+
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.1);
+}
+
+.auth-card input::placeholder {
+  color: #a1a8b0;
+}
+
+.auth-card form button[type="submit"] {
+  width: 100%;
+
+  border: none;
+  border-radius: 8px;
+
+  background: #ff6b00;
+  color: #ffffff;
+
+  padding: 14px;
+
+  font-size: 14px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  transition: background 0.2s, transform 0.2s;
+}
+
+.auth-card form button[type="submit"]:hover {
+  background: #e85e00;
+  transform: translateY(-1px);
+}
+
+.auth-error {
+  background: #fff1f0;
+  color: #c0392b;
+
+  border: 1px solid #ffd6d2;
+
+  border-radius: 8px;
+
+  padding: 12px 14px;
+
+  margin-bottom: 20px;
+
+  font-size: 13px;
+}
+
+.auth-register {
+  text-align: center;
+
+  color: #737d89;
+
+  font-size: 13px;
+
+  margin: 25px 0 0;
+}
+
+.auth-register button {
+  border: none;
+
+  background: none;
+
+  color: #ff6b00;
+
+  font-weight: 800;
+
+  cursor: pointer;
+
+  padding: 0;
+}
+
+.auth-register button:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 500px) {
+  .auth-page {
+    padding: 30px 15px;
+  }
+
+  .auth-card {
+    padding: 30px 22px;
+  }
+
+  .auth-card h1 {
+    font-size: 28px;
+  }
+}
