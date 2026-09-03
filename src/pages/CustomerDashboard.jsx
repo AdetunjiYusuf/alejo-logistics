@@ -1,5 +1,5 @@
-import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   getCurrentUser,
@@ -10,20 +10,22 @@ import {
   getDeliveries,
 } from "../utils/deliveryStorage";
 
+import Footer from "../components/Footer";
+
 import "./CustomerDashboard.css";
 
 function CustomerDashboard() {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
-  const [deliveries, setDeliveries] = useState([]);
+  const [user, setUser] =
+    useState(null);
 
-  // ==========================================
-  // PROTECT PAGE
-  // ==========================================
+  const [deliveries, setDeliveries] =
+    useState([]);
 
-  useEffect(() => {
-    const currentUser = getCurrentUser();
+  const loadData = () => {
+    const currentUser =
+      getCurrentUser();
 
     if (!currentUser) {
       navigate("/login");
@@ -32,338 +34,206 @@ function CustomerDashboard() {
 
     setUser(currentUser);
 
-    loadCustomerDeliveries(currentUser);
-  }, [navigate]);
+    const all =
+      getDeliveries();
 
-  // ==========================================
-  // LOAD CUSTOMER DELIVERIES
-  // ==========================================
-
-  const loadCustomerDeliveries = (currentUser) => {
-    const allDeliveries = getDeliveries();
-
-    const customerDeliveries =
-      allDeliveries.filter(
+    const mine =
+      all.filter(
         (delivery) =>
-          delivery.customerId === currentUser.id ||
+          delivery.customerId ===
+            currentUser.id ||
           delivery.customerEmail ===
             currentUser.email
       );
 
-    setDeliveries(customerDeliveries);
+    setDeliveries(mine);
   };
 
-  // ==========================================
-  // LOGOUT
-  // ==========================================
+  useEffect(() => {
+    loadData();
 
-  const handleLogout = () => {
+    const interval =
+      setInterval(
+        loadData,
+        1500
+      );
+
+    return () =>
+      clearInterval(interval);
+  }, [navigate]);
+
+  const logout = () => {
     logoutUser();
     navigate("/login");
   };
 
-  // ==========================================
-  // STATUS CLASS
-  // ==========================================
-
-  const getStatusClass = (status) => {
-    return (
-      status
-        ?.toLowerCase()
-        .replace(/\s+/g, "-") ||
-      "pending"
-    );
-  };
-
-  // ==========================================
-  // PAYMENT CLASS
-  // ==========================================
-
-  const getPaymentClass = (status) => {
-    if (status === "Paid") {
-      return "payment-paid";
-    }
-
-    if (status === "Cash to Collect") {
-      return "payment-cash";
-    }
-
-    if (
-      status === "Awaiting Payment" ||
-      status === "Pending"
-    ) {
-      return "payment-unpaid";
-    }
-
-    return "payment-unpaid";
-  };
-
-  // ==========================================
-  // ACTIVE DELIVERIES
-  // ==========================================
-
-  const activeDeliveries =
+  const active =
     deliveries.filter(
-      (delivery) =>
-        delivery.status !== "Delivered" &&
-        delivery.status !== "Cancelled" &&
-        delivery.status !== "Rejected"
+      (item) =>
+        item.status !==
+          "Delivered" &&
+        item.status !==
+          "Rejected" &&
+        item.status !==
+          "Cancelled"
     );
 
-  // ==========================================
-  // COMPLETED DELIVERIES
-  // ==========================================
-
-  const completedDeliveries =
+  const completed =
     deliveries.filter(
-      (delivery) =>
-        delivery.status === "Delivered"
+      (item) =>
+        item.status ===
+        "Delivered"
     );
-
-  // ==========================================
-  // TOTAL SPENT
-  // ==========================================
 
   const totalSpent =
     deliveries.reduce(
-      (total, delivery) =>
-        total +
+      (sum, item) =>
+        sum +
         Number(
-          delivery.totalPrice ||
-            delivery.deliveryPrice ||
-            delivery.price ||
+          item.totalPrice ||
+            item.deliveryPrice ||
             0
         ),
       0
     );
 
+  const money = (value) =>
+    `₦${Number(
+      value || 0
+    ).toLocaleString()}`;
+
+  const statusClass =
+    (status) =>
+      String(
+        status || "Pending"
+      )
+        .toLowerCase()
+        .replace(/\s+/g, "-");
+
   return (
     <div className="customer-page">
-
-      {/* HEADER */}
 
       <header className="customer-header">
 
         <div>
-
-          <p className="customer-label">
+          <span className="dashboard-eyebrow">
             ALEJO LOGISTICS
-          </p>
+          </span>
 
           <h1>
             Customer Dashboard
           </h1>
 
           <p>
-            Welcome back{" "}
+            Welcome back,{" "}
             <strong>
               {user?.fullName ||
-                user?.name ||
                 "Customer"}
             </strong>
           </p>
-
         </div>
 
-        <div className="customer-header-actions">
+        <div className="dashboard-actions">
 
           <button
-            className="book-delivery-btn"
+            className="primary-button"
             onClick={() =>
-              navigate("/book-delivery")
+              navigate(
+                "/book-delivery"
+              )
             }
           >
             + Book Delivery
           </button>
 
           <button
-            className="customer-logout"
-            onClick={handleLogout}
+            className="secondary-button"
+            onClick={() =>
+              navigate("/profile")
+            }
+          >
+            Profile
+          </button>
+
+          <button
+            className="logout-button"
+            onClick={logout}
           >
             Logout
           </button>
 
         </div>
-
       </header>
 
-      {/* QUICK STATS */}
 
-      <section className="customer-stats">
+      <main className="customer-main">
 
-        <div className="customer-stat">
-          <span>
-            Total Deliveries
-          </span>
+        <section className="stats-grid">
 
-          <strong>
-            {deliveries.length}
-          </strong>
-        </div>
-
-        <div className="customer-stat">
-          <span>
-            Active Deliveries
-          </span>
-
-          <strong>
-            {activeDeliveries.length}
-          </strong>
-        </div>
-
-        <div className="customer-stat">
-          <span>
-            Completed
-          </span>
-
-          <strong>
-            {completedDeliveries.length}
-          </strong>
-        </div>
-
-        <div className="customer-stat">
-          <span>
-            Total Spent
-          </span>
-
-          <strong>
-            ₦{totalSpent.toLocaleString()}
-          </strong>
-        </div>
-
-      </section>
-
-      {/* MAIN */}
-
-      <main className="customer-content">
-
-        {/* WELCOME */}
-
-        <section className="customer-welcome">
-
-          <div>
-
-            <p className="customer-label">
-              YOUR ACCOUNT
-            </p>
-
-            <h2>
-              Manage your deliveries
-            </h2>
-
-            <p>
-              Book a new delivery, track your
-              packages, and view your delivery
-              history.
-            </p>
-
+          <div className="stat-card">
+            <span>Total Deliveries</span>
+            <strong>
+              {deliveries.length}
+            </strong>
           </div>
 
-          <button
-            onClick={() =>
-              navigate("/book-delivery")
-            }
-          >
-            Book a Delivery
-          </button>
+          <div className="stat-card">
+            <span>Active</span>
+            <strong>
+              {active.length}
+            </strong>
+          </div>
+
+          <div className="stat-card">
+            <span>Completed</span>
+            <strong>
+              {completed.length}
+            </strong>
+          </div>
+
+          <div className="stat-card highlight">
+            <span>Total Spent</span>
+            <strong>
+              {money(totalSpent)}
+            </strong>
+          </div>
 
         </section>
 
-        {/* DASHBOARD LINKS */}
-
-        <div className="customer-dashboard-links">
-
-          <Link
-            to="/profile"
-            className="dashboard-link-card"
-          >
-            <span>
-              👤
-            </span>
-
-            <div>
-              <h3>
-                My Profile
-              </h3>
-
-              <p>
-                View and update your account
-              </p>
-            </div>
-          </Link>
-
-          <a
-            href="#my-deliveries"
-            className="dashboard-link-card"
-          >
-            <span>
-              📦
-            </span>
-
-            <div>
-              <h3>
-                My Deliveries
-              </h3>
-
-              <p>
-                View your delivery history
-              </p>
-            </div>
-          </a>
-
-          <Link
-            to="/track-delivery"
-            className="dashboard-link-card"
-          >
-            <span>
-              🚚
-            </span>
-
-            <div>
-              <h3>
-                Track Delivery
-              </h3>
-
-              <p>
-                Track your current delivery
-              </p>
-            </div>
-          </Link>
-
-        </div>
-
-        {/* ACTIVE DELIVERIES */}
 
         <section
-          className="customer-section"
+          className="delivery-section"
           id="my-deliveries"
         >
 
-          <div className="customer-section-header">
-
+          <div className="section-heading">
             <div>
-
-              <p className="customer-label">
-                CURRENT ORDERS
-              </p>
+              <span>
+                YOUR ORDERS
+              </span>
 
               <h2>
-                My Deliveries
+                Active Deliveries
               </h2>
-
             </div>
 
-            <span>
-              {activeDeliveries.length} active
-            </span>
-
+            <button
+              className="link-button"
+              onClick={() =>
+                navigate(
+                  "/book-delivery"
+                )
+              }
+            >
+              New delivery →
+            </button>
           </div>
 
-          {activeDeliveries.length === 0 ? (
 
-            <div className="customer-empty">
+          {active.length === 0 ? (
 
-              <div>
+            <div className="empty-card">
+              <div className="empty-icon">
                 📦
               </div>
 
@@ -372,102 +242,105 @@ function CustomerDashboard() {
               </h3>
 
               <p>
-                Your current deliveries will
-                appear here.
+                Book a delivery and
+                you'll see its progress
+                here.
               </p>
 
               <button
+                className="primary-button"
                 onClick={() =>
-                  navigate("/book-delivery")
+                  navigate(
+                    "/book-delivery"
+                  )
                 }
               >
-                Book a Delivery Now
+                Book Delivery
               </button>
-
             </div>
 
           ) : (
 
-            <div className="customer-deliveries">
+            <div className="delivery-grid">
 
-              {activeDeliveries.map(
+              {active.map(
                 (delivery) => (
 
-                  <div
-                    className="customer-delivery-card"
+                  <article
+                    className="delivery-card"
                     key={delivery.id}
                   >
 
-                    <div className="delivery-card-top">
+                    <div className="delivery-top">
 
                       <div>
-
-                        <strong>
+                        <span>
                           {delivery.id}
-                        </strong>
+                        </span>
 
                         <small>
                           {delivery.createdAt
                             ? new Date(
                                 delivery.createdAt
-                              ).toLocaleDateString()
+                              ).toLocaleString()
                             : ""}
                         </small>
-
                       </div>
 
-                      <span
-                        className={`customer-status ${getStatusClass(
+                      <b
+                        className={`status-badge ${statusClass(
                           delivery.status
                         )}`}
                       >
                         {delivery.status ||
                           "Pending"}
-                      </span>
+                      </b>
 
                     </div>
 
-                    {/* ROUTE */}
 
-                    <div className="customer-route">
+                    <div className="route-box">
 
                       <div>
-
                         <small>
-                          PICKUP
+                          PICKUP AREA
                         </small>
+
+                        <strong>
+                          {delivery.pickup ||
+                            "Not provided"}
+                        </strong>
 
                         <p>
                           {delivery.exactPickupAddress ||
-                            delivery.pickup ||
-                            "No pickup address"}
+                            "Exact address not provided"}
                         </p>
-
                       </div>
 
-                      <span>
+                      <div className="route-arrow">
                         ↓
-                      </span>
+                      </div>
 
                       <div>
-
                         <small>
-                          DESTINATION
+                          DESTINATION AREA
                         </small>
 
-                        <p>
-                          {delivery.exactAddress ||
-                            delivery.destination ||
-                            "No destination address"}
-                        </p>
+                        <strong>
+                          {delivery.destination ||
+                            "Not provided"}
+                        </strong>
 
+                        <p>
+                          {delivery.exactDestinationAddress ||
+                            "Exact address not provided"}
+                        </p>
                       </div>
 
                     </div>
 
-                    {/* DETAILS */}
 
-                    <div className="customer-delivery-details">
+                    <div className="detail-grid">
 
                       <div>
                         <span>
@@ -476,7 +349,18 @@ function CustomerDashboard() {
 
                         <strong>
                           {delivery.recipient ||
-                            "Not provided"}
+                            "—"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>
+                          Phone
+                        </span>
+
+                        <strong>
+                          {delivery.phone ||
+                            "—"}
                         </strong>
                       </div>
 
@@ -487,7 +371,7 @@ function CustomerDashboard() {
 
                         <strong>
                           {delivery.packageType ||
-                            "Package"}
+                            "—"}
                         </strong>
                       </div>
 
@@ -497,90 +381,83 @@ function CustomerDashboard() {
                         </span>
 
                         <strong>
-                          {delivery.distanceKm
-                            ? `${delivery.distanceKm} km`
-                            : "Not available"}
+                          {delivery.distanceKm ||
+                            0} km
                         </strong>
                       </div>
 
                       <div>
                         <span>
-                          Delivery Price
+                          Driver
                         </span>
 
                         <strong>
-                          ₦
-                          {Number(
-                            delivery.totalPrice ||
-                              delivery.deliveryPrice ||
-                              delivery.price ||
-                              0
-                          ).toLocaleString()}
+                          {delivery.assignedDriverName ||
+                            "Not assigned"}
                         </strong>
                       </div>
+
+                      <div>
+                        <span>
+                          Price
+                        </span>
+
+                        <strong>
+                          {money(
+                            delivery.totalPrice
+                          )}
+                        </strong>
+                      </div>
+
+                    </div>
+
+
+                    {delivery.description && (
+                      <div className="info-strip">
+                        <span>
+                          Package description
+                        </span>
+
+                        <p>
+                          {delivery.description}
+                        </p>
+                      </div>
+                    )}
+
+
+                    {delivery.driverNote && (
+                      <div className="info-strip">
+                        <span>
+                          Driver instructions
+                        </span>
+
+                        <p>
+                          {delivery.driverNote}
+                        </p>
+                      </div>
+                    )}
+
+
+                    <div className="delivery-bottom">
 
                       <div>
                         <span>
                           Payment
                         </span>
 
-                        <strong
-                          className={getPaymentClass(
-                            delivery.paymentStatus
-                          )}
-                        >
+                        <strong>
                           {delivery.paymentStatus ||
                             "Unpaid"}
                         </strong>
 
-                        {delivery.paymentMethod && (
-                          <small className="customer-payment-method">
-                            via{" "}
-                            {delivery.paymentMethod ===
-                            "transfer"
-                              ? "Bank Transfer"
-                              : "Cash"}
-                          </small>
-                        )}
-
+                        <small>
+                          {delivery.paymentMethod ||
+                            ""}
+                        </small>
                       </div>
-
-                    </div>
-
-                    {/* DRIVER */}
-
-                    <div className="customer-driver">
-
-                      <span>
-                        Driver
-                      </span>
-
-                      <strong>
-                        {delivery.assignedDriverName ||
-                          "Waiting for driver assignment"}
-                      </strong>
-
-                    </div>
-
-                    {/* DRIVER NOTE */}
-
-                    {delivery.driverNote && (
-                      <div className="customer-driver">
-                        <span>
-                          Driver Instructions
-                        </span>
-
-                        <strong>
-                          {delivery.driverNote}
-                        </strong>
-                      </div>
-                    )}
-
-                    {/* ACTIONS */}
-
-                    <div className="customer-card-actions">
 
                       <button
+                        className="track-button"
                         onClick={() =>
                           navigate(
                             `/track-delivery/${delivery.id}`
@@ -592,64 +469,52 @@ function CustomerDashboard() {
 
                     </div>
 
-                  </div>
+                  </article>
+
                 )
               )}
 
             </div>
+
           )}
 
         </section>
 
-        {/* HISTORY */}
 
-        <section className="customer-section">
+        <section className="delivery-section">
 
-          <div className="customer-section-header">
-
+          <div className="section-heading">
             <div>
-
-              <p className="customer-label">
-                DELIVERY HISTORY
-              </p>
+              <span>
+                HISTORY
+              </span>
 
               <h2>
                 Completed Deliveries
               </h2>
-
             </div>
-
-            <span>
-              {completedDeliveries.length}
-            </span>
-
           </div>
 
-          {completedDeliveries.length === 0 ? (
 
-            <div className="customer-empty small">
+          {completed.length === 0 ? (
 
-              <p>
-                Completed deliveries will
-                appear here.
-              </p>
-
+            <div className="empty-small">
+              No completed deliveries yet.
             </div>
 
           ) : (
 
-            <div className="customer-history">
+            <div className="history-list">
 
-              {completedDeliveries.map(
+              {completed.map(
                 (delivery) => (
 
                   <div
-                    className="customer-history-row"
+                    className="history-row"
                     key={delivery.id}
                   >
 
                     <div>
-
                       <strong>
                         {delivery.id}
                       </strong>
@@ -659,78 +524,34 @@ function CustomerDashboard() {
                         {" → "}
                         {delivery.destination}
                       </span>
-
-                    </div>
-
-                    <div className="history-payment">
-
-                      <span
-                        className={getPaymentClass(
-                          delivery.paymentStatus
-                        )}
-                      >
-                        {delivery.paymentStatus ||
-                          "Unpaid"}
-                      </span>
-
-                      {delivery.paymentMethod && (
-                        <small>
-                          {delivery.paymentMethod}
-                        </small>
-                      )}
-
                     </div>
 
                     <div>
-
                       <span>
-                        Delivered
+                        {delivery.paymentStatus}
                       </span>
 
                       <strong>
-                        ₦
-                        {Number(
-                          delivery.totalPrice ||
-                            delivery.deliveryPrice ||
-                            delivery.price ||
-                            0
-                        ).toLocaleString()}
+                        {money(
+                          delivery.totalPrice
+                        )}
                       </strong>
-
                     </div>
 
                   </div>
+
                 )
               )}
 
             </div>
+
           )}
 
         </section>
 
       </main>
 
-      {/* FOOTER */}
-
-      <footer className="customer-footer">
-
-        <strong>
-          Alejo Logistics
-        </strong>
-
-        <span>
-          0707 752 4524
-        </span>
-
-        <span>
-          Alejooafrica@gmail.com
-        </span>
-
-        <span>
-          Lagos, Nigeria
-        </span>
-
-      </footer>
+      <Footer />
 
     </div>
   );

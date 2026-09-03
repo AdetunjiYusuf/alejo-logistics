@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -14,51 +14,73 @@ function DriverDashboard() {
   const navigate = useNavigate();
 
   const [deliveries, setDeliveries] = useState([]);
+  const [online, setOnline] = useState(false);
+  const [driver, setDriver] = useState(null);
   const [message, setMessage] = useState("");
 
-  const [isOnline, setIsOnline] = useState(
-    () =>
-      localStorage.getItem("alejoDriverOnline") === "true"
-  );
-
-  const driver = JSON.parse(
-    localStorage.getItem("alejoCurrentDriver") || "null"
-  );
-
-  // ==========================================
-  // PROTECT DRIVER PAGE
-  // ==========================================
-
   useEffect(() => {
-    const authenticated = localStorage.getItem(
-      "alejoDriverAuthenticated"
-    );
+    const authenticated =
+      localStorage.getItem("alejoDriverAuthenticated") === "true";
 
-    if (authenticated !== "true" || !driver) {
+    const savedDriver = localStorage.getItem("alejoCurrentDriver");
+
+    if (!authenticated || !savedDriver) {
       navigate("/driver-login");
       return;
     }
 
+    try {
+      const parsedDriver = JSON.parse(savedDriver);
+      setDriver(parsedDriver);
+    } catch {
+      localStorage.removeItem("alejoCurrentDriver");
+      navigate("/driver-login");
+      return;
+    }
+
+    setOnline(
+      localStorage.getItem("alejoDriverOnline") === "true"
+    );
+
     loadDeliveries();
   }, [navigate]);
-
-  // ==========================================
-  // LOAD DELIVERIES
-  // ==========================================
 
   const loadDeliveries = () => {
     setDeliveries(getDeliveries());
   };
 
-  // ==========================================
-  // ONLINE / OFFLINE
-  // ==========================================
+  const availableDeliveries = useMemo(() => {
+    return deliveries.filter(
+      (delivery) =>
+        delivery.status === "Approved" &&
+        !delivery.assignedDriverId &&
+        !delivery.acceptedByDriver
+    );
+  }, [deliveries]);
 
-  const toggleOnlineStatus = () => {
-    const newStatus = !isOnline;
+  const myDeliveries = useMemo(() => {
+    if (!driver) return [];
 
-    setIsOnline(newStatus);
+    return deliveries.filter(
+      (delivery) =>
+        String(delivery.assignedDriverId) === String(driver.id)
+    );
+  }, [deliveries, driver]);
 
+  const completedDeliveries = useMemo(() => {
+    if (!driver) return [];
+
+    return deliveries.filter(
+      (delivery) =>
+        String(delivery.assignedDriverId) === String(driver.id) &&
+        delivery.status === "Delivered"
+    );
+  }, [deliveries, driver]);
+
+  const toggleOnline = () => {
+    const newStatus = !online;
+
+    setOnline(newStatus);
     localStorage.setItem(
       "alejoDriverOnline",
       String(newStatus)
@@ -66,113 +88,87 @@ function DriverDashboard() {
 
     setMessage(
       newStatus
-        ? "You are now Online and can receive delivery requests."
-        : "You are now Offline and cannot accept new deliveries."
+        ? "You are now online and can accept deliveries."
+        : "You are now offline."
     );
+
+    setTimeout(() => setMessage(""), 3000);
   };
 
-  // ==========================================
-  // ACCEPT DELIVERY
-  // ==========================================
-
   const handleAccept = (deliveryId) => {
-    if (!driver) {
-      setMessage("Driver account not found.");
+    if (!online) {
+      setMessage("Please go online before accepting a delivery.");
       return;
     }
 
-    if (!isOnline) {
-      setMessage(
-        "Please switch to Online before accepting a delivery."
-      );
-      return;
-    }
+    if (!driver) return;
 
     const result = acceptDelivery(deliveryId, driver);
 
-    if (!result.success) {
-      setMessage(result.message || "Unable to accept delivery.");
-      loadDeliveries();
-      return;
+    if (result?.success) {
+      setDeliveries(result.deliveries || getDeliveries());
+      setMessage("Delivery accepted successfully.");
+    } else {
+      setMessage(
+        result?.message || "Unable to accept this delivery."
+      );
     }
 
-    setMessage("Delivery accepted successfully.");
-
-    setDeliveries(result.deliveries || getDeliveries());
+    setTimeout(() => setMessage(""), 3000);
   };
 
-  // ==========================================
-  // RELEASE DELIVERY
-  // ==========================================
-
   const handleRelease = (deliveryId) => {
-    if (!driver) {
-      setMessage("Driver account not found.");
-      return;
-    }
+    if (!driver) return;
 
     const confirmed = window.confirm(
       "Are you sure you want to release this delivery?"
     );
 
-    if (!confirmed) {
-      return;
+    if (!confirmed) return;
+
+    const result = releaseDelivery(deliveryId, driver);
+
+    if (result?.success) {
+      setDeliveries(result.deliveries || getDeliveries());
+      setMessage("Delivery released.");
+    } else {
+      setMessage(
+        result?.message || "Unable to release delivery."
+      );
     }
 
-    const updated = releaseDelivery(
-      deliveryId,
-      driver
-    );
-
-    setDeliveries(updated || getDeliveries());
-
-    setMessage(
-      "Delivery returned to available orders."
-    );
+    setTimeout(() => setMessage(""), 3000);
   };
 
-  // ==========================================
-  // UPDATE DELIVERY STATUS
-  // ==========================================
+  const updateStatus = (deliveryId, newStatus) => {
+    if (!driver) return;
 
-  const updateStatus = (deliveryId, status) => {
-    if (!driver) {
-      return;
-    }
-
-    const current = getDeliveries();
-
-    const updated = current.map((delivery) => {
-      if (delivery.id !== deliveryId) {
-        return delivery;
-      }
-
+    const updated = deliveries.map((delivery) => {
       if (
-        delivery.assignedDriverId !== driver.id
+        String(delivery.id) === String(deliveryId) &&
+        String(delivery.assignedDriverId) === String(driver.id)
       ) {
-        return delivery;
+        return {
+          ...delivery,
+          status: newStatus,
+          orderStatus: newStatus,
+          updatedAt: new Date().toISOString(),
+          ...(newStatus === "Delivered"
+            ? { deliveredAt: new Date().toISOString() }
+            : {}),
+        };
       }
 
-      return {
-        ...delivery,
-        status,
-        orderStatus: status,
-        updatedAt: new Date().toISOString(),
-      };
+      return delivery;
     });
 
     saveDeliveries(updated);
-
     setDeliveries(updated);
 
-    setMessage(
-      `Delivery status updated to ${status}.`
-    );
-  };
+    setMessage(`Delivery status changed to ${newStatus}.`);
 
-  // ==========================================
-  // GOOGLE MAPS ROUTE
-  // ==========================================
+    setTimeout(() => setMessage(""), 3000);
+  };
 
   const openRoute = (delivery) => {
     const pickup =
@@ -182,625 +178,722 @@ function DriverDashboard() {
 
     const destination =
       delivery.exactAddress ||
+      delivery.exactDestinationAddress ||
       delivery.destination ||
       "";
 
     if (!pickup || !destination) {
-      setMessage(
-        "Pickup or destination address is missing."
-      );
+      setMessage("Pickup or destination address is missing.");
       return;
     }
 
-    const mapsUrl =
+    const url =
       `https://www.google.com/maps/dir/?api=1` +
       `&origin=${encodeURIComponent(pickup)}` +
       `&destination=${encodeURIComponent(destination)}`;
 
-    window.open(
-      mapsUrl,
-      "_blank",
-      "noopener,noreferrer"
-    );
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  // ==========================================
-  // AVAILABLE ORDERS
-  // ==========================================
-
-  const availableOrders = deliveries.filter(
-    (delivery) =>
-      delivery.status === "Approved" &&
-      !delivery.assignedDriverId &&
-      !delivery.acceptedByDriver
-  );
-
-  // ==========================================
-  // MY ORDERS
-  // ==========================================
-
-  const myOrders = deliveries.filter(
-    (delivery) =>
-      delivery.assignedDriverId === driver?.id
-  );
-
-  // ==========================================
-  // DELIVERED
-  // ==========================================
-
-  const deliveredOrders = myOrders.filter(
-    (delivery) =>
-      delivery.status === "Delivered"
-  );
-
-  // ==========================================
-  // IN TRANSIT
-  // ==========================================
-
-  const inTransitOrders = myOrders.filter(
-    (delivery) =>
-      delivery.status === "In Transit"
-  );
-
-  // ==========================================
-  // LOGOUT
-  // ==========================================
-
-  const handleLogout = () => {
-    localStorage.removeItem(
-      "alejoDriverAuthenticated"
-    );
-
-    localStorage.removeItem(
-      "alejoCurrentDriver"
-    );
-
-    localStorage.removeItem(
-      "alejoDriverOnline"
-    );
+  const logout = () => {
+    localStorage.removeItem("alejoDriverAuthenticated");
+    localStorage.removeItem("alejoCurrentDriver");
+    localStorage.removeItem("alejoDriverOnline");
 
     navigate("/driver-login");
   };
+
+  const getStatusClass = (status) => {
+    return String(status || "")
+      .toLowerCase()
+      .replace(/\s+/g, "-");
+  };
+
+  const formatPrice = (delivery) => {
+    const price =
+      delivery.totalPrice ??
+      delivery.deliveryPrice ??
+      delivery.price ??
+      0;
+
+    return `₦${Number(price).toLocaleString()}`;
+  };
+
+  const formatDistance = (delivery) => {
+    if (
+      delivery.distanceKm === undefined ||
+      delivery.distanceKm === null ||
+      delivery.distanceKm === ""
+    ) {
+      return "Distance unavailable";
+    }
+
+    return `${Number(delivery.distanceKm).toFixed(1)} km`;
+  };
+
+  if (!driver) {
+    return null;
+  }
 
   return (
     <div className="driver-page">
 
       {/* HEADER */}
-
       <header className="driver-header">
+        <div className="driver-brand">
+          <div className="driver-logo">
+            A
+          </div>
 
-        <div>
-          <p className="driver-label">
-            ALEJO LOGISTICS
-          </p>
-
-          <h1>
-            Driver Dashboard
-          </h1>
-
-          <p>
-            Welcome{" "}
-            <strong>
-              {driver?.name || "Driver"}
-            </strong>
-          </p>
+          <div>
+            <h1>ALEJO LOGISTICS</h1>
+            <span>Driver Dashboard</span>
+          </div>
         </div>
 
-        <div className="driver-header-actions">
-
-          <button
-            className={
-              isOnline
-                ? "driver-online active"
-                : "driver-online"
-            }
-            onClick={toggleOnlineStatus}
+        <div className="driver-header-right">
+          <div
+            className={`driver-online-status ${
+              online ? "is-online" : "is-offline"
+            }`}
+            onClick={toggleOnline}
           >
-            <span className="online-dot">
-              ●
-            </span>
+            <span className="status-dot"></span>
 
-            {isOnline
-              ? "Online"
-              : "Offline"}
-          </button>
+            {online ? "Online" : "Offline"}
+          </div>
 
           <button
-            className="driver-logout"
-            onClick={handleLogout}
+            className="driver-logout-btn"
+            onClick={logout}
           >
             Logout
           </button>
-
         </div>
-
       </header>
 
-      {/* MESSAGE */}
+      {/* MAIN */}
+      <main className="driver-main">
 
-      {message && (
-        <div className="driver-message">
-
-          <span>
-            {message}
-          </span>
-
-          <button
-            onClick={() => setMessage("")}
-          >
-            ×
-          </button>
-
-        </div>
-      )}
-
-      {/* STATS */}
-
-      <div className="driver-stats">
-
-        <div>
-          <span>
-            Available Orders
-          </span>
-
-          <strong>
-            {availableOrders.length}
-          </strong>
-        </div>
-
-        <div>
-          <span>
-            My Orders
-          </span>
-
-          <strong>
-            {myOrders.length}
-          </strong>
-        </div>
-
-        <div>
-          <span>
-            In Transit
-          </span>
-
-          <strong>
-            {inTransitOrders.length}
-          </strong>
-        </div>
-
-        <div>
-          <span>
-            Delivered
-          </span>
-
-          <strong>
-            {deliveredOrders.length}
-          </strong>
-        </div>
-
-      </div>
-
-      {/* AVAILABLE ORDERS */}
-
-      <section className="driver-section">
-
-        <div className="driver-section-header">
-
+        {/* HERO */}
+        <section className="driver-hero">
           <div>
-            <p className="driver-label">
-              DISPATCH BOARD
-            </p>
+            <p className="hero-label">DRIVER DASHBOARD</p>
 
             <h2>
-              Available Orders
+              Here's what's happening with your deliveries today.
             </h2>
           </div>
 
-          <span>
-            {availableOrders.length} available
-          </span>
+          <button
+            className={`hero-online-btn ${
+              online ? "active" : ""
+            }`}
+            onClick={toggleOnline}
+          >
+            <span className="status-dot"></span>
 
-        </div>
+            {online
+              ? "You are Online"
+              : "Go Online"}
+          </button>
+        </section>
 
-        {availableOrders.length === 0 ? (
+        {/* MESSAGE */}
+        {message && (
+          <div className="driver-message">
+            <span>✓</span>
+            {message}
+          </div>
+        )}
 
-          <div className="driver-empty">
+        {/* STATS */}
+        <section className="driver-stats">
 
-            <div>
+          <div className="driver-stat-card">
+            {/* <div className="stat-icon orange">
               📦
+            </div> */}
+
+            <div className="stat-number">
+              {availableDeliveries.length}
             </div>
 
-            <h3>
-              No available orders
-            </h3>
+            <div className="stat-title">
+              Available Deliveries
+            </div>
 
-            <p>
-              Approved customer bookings
-              will appear here.
-            </p>
-
+            <div className="stat-description">
+              Ready for you
+            </div>
           </div>
 
-        ) : (
+          <div className="driver-stat-card">
+            {/* <div className="stat-icon blue">
+              🚚
+            </div> */}
 
-          <div className="driver-orders">
+            <div className="stat-number">
+              {myDeliveries.length}
+            </div>
 
-            {availableOrders.map(
-              (delivery) => (
+            <div className="stat-title">
+              My Deliveries
+            </div>
 
+            <div className="stat-description">
+              Currently assigned
+            </div>
+          </div>
+
+          <div className="driver-stat-card">
+            {/* <div className="stat-icon green">
+              ✓
+            </div> */}
+
+            <div className="stat-number">
+              {completedDeliveries.length}
+            </div>
+
+            <div className="stat-title">
+              Completed
+            </div>
+
+            <div className="stat-description">
+              Delivered successfully
+            </div>
+          </div>
+
+        </section>
+
+        {/* AVAILABLE */}
+        <section className="driver-section">
+
+          <div className="section-heading">
+            <div>
+              <p className="section-label">
+                AVAILABLE WORK
+              </p>
+
+              <h3>
+                Available Deliveries
+              </h3>
+            </div>
+
+            <span className="section-count">
+              {availableDeliveries.length}
+            </span>
+          </div>
+
+          {availableDeliveries.length === 0 ? (
+            <div className="empty-card">
+              <div className="empty-icon">
+                📦
+              </div>
+
+              <h4>No deliveries available</h4>
+
+              <p>
+                New approved deliveries will appear
+                here when they are ready.
+              </p>
+            </div>
+          ) : (
+            <div className="delivery-grid">
+
+              {availableDeliveries.map((delivery) => (
                 <div
-                  className="driver-order"
+                  className="delivery-card"
                   key={delivery.id}
                 >
 
-                  <div className="order-top">
-
-                    <strong>
-                      {delivery.id}
-                    </strong>
-
-                    <span className="status approved">
-                      Approved
-                    </span>
-
-                  </div>
-
-                  <div className="driver-customer">
-
-                    <strong>
-                      👤{" "}
-                      {delivery.customerName ||
-                        "Customer"}
-                    </strong>
-
-                    <span>
-                      📞{" "}
-                      {delivery.customerPhone ||
-                        delivery.phone ||
-                        "No phone"}
-                    </span>
-
-                  </div>
-
-                  <div className="order-route">
-
+                  <div className="delivery-card-top">
                     <div>
-                      <small>
-                        PICKUP
-                      </small>
+                      <span className="delivery-id">
+                        {delivery.id}
+                      </span>
 
-                      <p>
-                        {delivery.exactPickupAddress ||
-                          delivery.pickup ||
-                          "No pickup address"}
-                      </p>
+                      <span className="delivery-status approved">
+                        Approved
+                      </span>
                     </div>
 
-                    <span>
-                      ↓
-                    </span>
+                    <strong className="delivery-price">
+                      {formatPrice(delivery)}
+                    </strong>
+                  </div>
 
-                    <div>
-                      <small>
-                        DESTINATION
-                      </small>
+                  <div className="route-box">
 
-                      <p>
-                        {delivery.exactAddress ||
-                          delivery.destination ||
-                          "No destination address"}
-                      </p>
+                    <div className="route-row">
+                      <span className="route-dot pickup"></span>
+
+                      <div>
+                        <small>Pickup</small>
+
+                        <strong>
+                          {delivery.exactPickupAddress ||
+                            delivery.pickup ||
+                            "Not provided"}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="route-line"></div>
+
+                    <div className="route-row">
+                      <span className="route-dot destination"></span>
+
+                      <div>
+                        <small>Destination</small>
+
+                        <strong>
+                          {delivery.exactAddress ||
+                            delivery.exactDestinationAddress ||
+                            delivery.destination ||
+                            "Not provided"}
+                        </strong>
+                      </div>
                     </div>
 
                   </div>
 
-                  <div className="order-details">
+                  <div className="delivery-info">
 
-                    <span>
-                      Recipient:
+                    <div>
+                      <small>Package</small>
                       <strong>
-                        {" "}
-                        {delivery.recipient ||
-                          "Not provided"}
-                      </strong>
-                    </span>
-
-                    <span>
-                      Package:
-                      <strong>
-                        {" "}
                         {delivery.packageType ||
                           "Package"}
                       </strong>
-                    </span>
+                    </div>
 
-                    {delivery.distanceKm && (
-                      <span>
-                        Distance:
-                        <strong>
-                          {" "}
-                          {delivery.distanceKm} km
-                        </strong>
+                    <div>
+                      <small>Distance</small>
+                      <strong>
+                        {formatDistance(delivery)}
+                      </strong>
+                    </div>
+
+                  </div>
+
+                  {delivery.driverNote && (
+                    <div className="driver-note">
+                      <strong>Driver Instructions</strong>
+
+                      <p>
+                        {delivery.driverNote}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="delivery-actions">
+                    <button
+                      className="route-btn"
+                      onClick={() =>
+                        openRoute(delivery)
+                      }
+                    >
+                      🗺 View Route
+                    </button>
+
+                    <button
+                      className="accept-btn"
+                      onClick={() =>
+                        handleAccept(delivery.id)
+                      }
+                    >
+                      Accept Delivery
+                    </button>
+                  </div>
+
+                </div>
+              ))}
+
+            </div>
+          )}
+
+        </section>
+
+        {/* MY DELIVERIES */}
+        <section className="driver-section">
+
+          <div className="section-heading">
+            <div>
+              <p className="section-label">
+                ACTIVE ORDERS
+              </p>
+
+              <h3>
+                My Deliveries
+              </h3>
+            </div>
+
+            <span className="section-count">
+              {myDeliveries.length}
+            </span>
+          </div>
+
+          {myDeliveries.length === 0 ? (
+            <div className="empty-card">
+              <div className="empty-icon">
+                🚚
+              </div>
+
+              <h4>No assigned deliveries</h4>
+
+              <p>
+                Accept an available delivery to see
+                it here.
+              </p>
+            </div>
+          ) : (
+            <div className="delivery-grid">
+
+              {myDeliveries.map((delivery) => (
+                <div
+                  className="delivery-card"
+                  key={delivery.id}
+                >
+
+                  <div className="delivery-card-top">
+
+                    <div>
+                      <span className="delivery-id">
+                        {delivery.id}
                       </span>
+
+                      <span
+                        className={`delivery-status ${getStatusClass(
+                          delivery.status
+                        )}`}
+                      >
+                        {delivery.status ||
+                          "Assigned"}
+                      </span>
+                    </div>
+
+                    <strong className="delivery-price">
+                      {formatPrice(delivery)}
+                    </strong>
+
+                  </div>
+
+                  <div className="route-box">
+
+                    <div className="route-row">
+                      <span className="route-dot pickup"></span>
+
+                      <div>
+                        <small>Pickup</small>
+
+                        <strong>
+                          {delivery.exactPickupAddress ||
+                            delivery.pickup ||
+                            "Not provided"}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="route-line"></div>
+
+                    <div className="route-row">
+                      <span className="route-dot destination"></span>
+
+                      <div>
+                        <small>Destination</small>
+
+                        <strong>
+                          {delivery.exactAddress ||
+                            delivery.exactDestinationAddress ||
+                            delivery.destination ||
+                            "Not provided"}
+                        </strong>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div className="delivery-info">
+
+                    <div>
+                      <small>Recipient</small>
+
+                      <strong>
+                        {delivery.recipient ||
+                          "Not provided"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <small>Phone</small>
+
+                      <strong>
+                        {delivery.recipientPhone ||
+                          delivery.phone ||
+                          "Not provided"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <small>Package</small>
+
+                      <strong>
+                        {delivery.packageType ||
+                          "Package"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <small>Distance</small>
+
+                      <strong>
+                        {formatDistance(delivery)}
+                      </strong>
+                    </div>
+
+                  </div>
+
+                  {delivery.driverNote && (
+                    <div className="driver-note">
+                      <strong>
+                        Driver Instructions
+                      </strong>
+
+                      <p>
+                        {delivery.driverNote}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="delivery-actions">
+
+                    <button
+                      className="route-btn"
+                      onClick={() =>
+                        openRoute(delivery)
+                      }
+                    >
+                      🗺 View Route
+                    </button>
+
+                    {delivery.status !==
+                      "Delivered" && (
+                      <button
+                        className="release-btn"
+                        onClick={() =>
+                          handleRelease(delivery.id)
+                        }
+                      >
+                        Release
+                      </button>
                     )}
 
                   </div>
 
-                  <button
-                    className="accept-order"
-                    disabled={!isOnline}
-                    onClick={() =>
-                      handleAccept(
-                        delivery.id
-                      )
-                    }
-                  >
-                    {isOnline
-                      ? "Accept Delivery"
-                      : "Go Online to Accept"}
-                  </button>
+                  {delivery.status !==
+                    "Delivered" && (
+                    <div className="status-control">
+
+                      <label>
+                        Update Delivery Status
+                      </label>
+
+                      <select
+                        value={
+                          delivery.status || "Accepted"
+                        }
+                        onChange={(event) =>
+                          updateStatus(
+                            delivery.id,
+                            event.target.value
+                          )
+                        }
+                      >
+                        <option value="Accepted">
+                          Accepted
+                        </option>
+
+                        <option value="Picked Up">
+                          Picked Up
+                        </option>
+
+                        <option value="In Transit">
+                          In Transit
+                        </option>
+
+                        <option value="Delivered">
+                          Delivered
+                        </option>
+                      </select>
+
+                    </div>
+                  )}
 
                 </div>
-              )
-            )}
+              ))}
 
-          </div>
-        )}
+            </div>
+          )}
 
-      </section>
+        </section>
 
-      {/* MY DELIVERIES */}
+        {/* COMPLETED */}
+        <section className="driver-section">
 
-      <section className="driver-section">
-
-        <div className="driver-section-header">
-
-          <div>
-
-            <p className="driver-label">
-              MY WORK
-            </p>
-
-            <h2>
-              My Assigned Deliveries
-            </h2>
-
-          </div>
-
-          <span>
-            {myOrders.length} assigned
-          </span>
-
-        </div>
-
-        {myOrders.length === 0 ? (
-
-          <div className="driver-empty">
-
+          <div className="section-heading">
             <div>
-              🚚
+              <p className="section-label">
+                DELIVERY HISTORY
+              </p>
+
+              <h3>
+                Completed Deliveries
+              </h3>
             </div>
 
-            <h3>
-              No assigned deliveries
-            </h3>
-
-            <p>
-              Accepted deliveries will
-              appear here.
-            </p>
-
+            <span className="section-count">
+              {completedDeliveries.length}
+            </span>
           </div>
 
-        ) : (
+          {completedDeliveries.length === 0 ? (
+            <div className="empty-card">
+              <div className="empty-icon">
+                ✓
+              </div>
 
-          <div className="driver-orders">
+              <h4>No completed deliveries</h4>
 
-            {myOrders.map(
-              (delivery) => {
+              <p>
+                Completed deliveries will appear
+                here.
+              </p>
+            </div>
+          ) : (
+            <div className="completed-list">
 
-                const statusClass =
-                  delivery.status
-                    ?.toLowerCase()
-                    .replace(/\s+/g, "-") ||
-                  "pending";
+              {completedDeliveries.map((delivery) => (
+                <div
+                  className="completed-card"
+                  key={delivery.id}
+                >
 
-                return (
-                  <div
-                    className="driver-order accepted"
-                    key={delivery.id}
-                  >
+                  <div className="completed-check">
+                    ✓
+                  </div>
 
-                    <div className="order-top">
+                  <div className="completed-main">
+
+                    <div className="completed-title-row">
 
                       <strong>
                         {delivery.id}
                       </strong>
 
-                      <span
-                        className={`status ${statusClass}`}
-                      >
-                        {delivery.status}
+                      <span className="completed-status">
+                        Delivered
                       </span>
 
                     </div>
 
-                    <div className="driver-customer">
+                    <p>
+                      {delivery.pickup ||
+                        delivery.exactPickupAddress ||
+                        "Pickup"}{" "}
+                      →{" "}
+                      {delivery.destination ||
+                        delivery.exactAddress ||
+                        "Destination"}
+                    </p>
 
-                      <strong>
-                        👤{" "}
-                        {delivery.customerName ||
-                          "Customer"}
-                      </strong>
-
-                      <span>
-                        📞{" "}
-                        {delivery.customerPhone ||
-                          delivery.phone ||
-                          "No phone"}
-                      </span>
-
-                    </div>
-
-                    <div className="order-route">
-
-                      <div>
-
-                        <small>
-                          PICKUP
-                        </small>
-
-                        <p>
-                          {delivery.exactPickupAddress ||
-                            delivery.pickup ||
-                            "No pickup address"}
-                        </p>
-
-                      </div>
+                    <div className="completed-meta">
 
                       <span>
-                        ↓
-                      </span>
-
-                      <div>
-
-                        <small>
-                          DESTINATION
-                        </small>
-
-                        <p>
-                          {delivery.exactAddress ||
-                            delivery.destination ||
-                            "No destination address"}
-                        </p>
-
-                      </div>
-
-                    </div>
-
-                    <div className="order-details">
-
-                      <span>
-                        Recipient:
-                        <strong>
-                          {" "}
-                          {delivery.recipient ||
-                            "Not provided"}
-                        </strong>
+                        Package: {delivery.packageType || "Package"}
                       </span>
 
                       <span>
-                        Package:
-                        <strong>
-                          {" "}
-                          {delivery.packageType ||
-                            "Package"}
-                        </strong>
+                        {formatDistance(delivery)}
                       </span>
 
-                      {delivery.distanceKm && (
-                        <span>
-                          Distance:
-                          <strong>
-                            {" "}
-                            {delivery.distanceKm} km
-                          </strong>
-                        </span>
-                      )}
-
-                    </div>
-
-                    <div className="driver-actions">
-
-                      <button
-                        className="maps-button"
-                        onClick={() =>
-                          openRoute(
-                            delivery
-                          )
-                        }
-                      >
-                        📍 Open Route
-                      </button>
-
-                      {delivery.status !==
-                        "Delivered" && (
-
-                        <select
-                          value={
-                            delivery.status ||
-                            "Accepted"
-                          }
-                          onChange={(e) =>
-                            updateStatus(
-                              delivery.id,
-                              e.target.value
-                            )
-                          }
-                        >
-
-                          <option value="Accepted">
-                            Accepted
-                          </option>
-
-                          <option value="Picked Up">
-                            Picked Up
-                          </option>
-
-                          <option value="In Transit">
-                            In Transit
-                          </option>
-
-                          <option value="Delivered">
-                            Delivered
-                          </option>
-
-                        </select>
-
-                      )}
-
-                      {delivery.status !==
-                        "Delivered" && (
-
-                        <button
-                          className="release-order"
-                          onClick={() =>
-                            handleRelease(
-                              delivery.id
-                            )
-                          }
-                        >
-                          Release
-                        </button>
-
-                      )}
+                      <span>
+                        {formatPrice(delivery)}
+                      </span>
 
                     </div>
 
                   </div>
-                );
-              }
-            )}
+
+                  <div className="completed-date">
+                    {delivery.deliveredAt
+                      ? new Date(
+                          delivery.deliveredAt
+                        ).toLocaleDateString()
+                      : delivery.updatedAt
+                      ? new Date(
+                          delivery.updatedAt
+                        ).toLocaleDateString()
+                      : "Completed"}
+                  </div>
+
+                </div>
+              ))}
+
+            </div>
+          )}
+
+        </section>
+
+      </main>
+
+      {/* FOOTER */}
+      <footer className="alejo-footer">
+
+        <div className="footer-inner">
+
+          <div className="footer-brand">
+
+            <div className="footer-logo">
+              A
+            </div>
+
+            <div>
+              <strong>
+                ALEJO LOGISTICS
+              </strong>
+
+              <p>
+                Reliable delivery. Simple tracking. Better service.
+              </p>
+            </div>
 
           </div>
-        )}
 
-      </section>
+          <div className="footer-contact">
 
-      {/* CONTACT */}
+            <a href="tel:07077524524">
+              0707 752 4524
+            </a>
 
-      <footer className="driver-footer">
-        <strong>
-          Alejo Logistics
-        </strong>
+            <a href="mailto:alejoafrica@gmail.com">
+              alejoafrica@gmail.com
+            </a>
 
-        <span>
-          0707 752 4524
-        </span>
+          </div>
 
-        <span>
-          Alejooafrica@gmail.com
-        </span>
+        </div>
+
+        <div className="footer-bottom">
+          <span>
+            © {new Date().getFullYear()} Alejo Logistics
+          </span>
+
+          <span>
+            All rights reserved.
+          </span>
+        </div>
+
       </footer>
 
     </div>

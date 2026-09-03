@@ -1,134 +1,187 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useState,
+} from "react";
 
-import { getCurrentUser } from "../utils/authStorage";
-import { createDelivery } from "../utils/deliveryStorage";
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  getCurrentUser,
+} from "../utils/authStorage";
+
+import {
+  createDelivery,
+} from "../utils/deliveryStorage";
 
 import {
   calculateDeliveryPrice,
   getPricing,
 } from "../utils/pricingStorage";
 
+import Footer from "../components/Footer";
+
 import "./BookDelivery.css";
 
 function BookDelivery() {
-  const navigate = useNavigate();
-  const user = getCurrentUser();
+  const navigate =
+    useNavigate();
 
-  const [form, setForm] = useState({
-    pickup: "",
-    destination: "",
-    exactPickupAddress: "", // NEW FIELD
-    exactAddress: "",
-    driverNote: "",
-    recipient: "",
-    phone: "",
-    packageType: "",
-    senderName: "",
-    transferAmount: "",
-  });
+  const [user, setUser] =
+    useState(null);
 
-  const [distance, setDistance] = useState(null);
-  const [price, setPrice] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState("transfer");
+  const [form, setForm] =
+    useState({
+      pickup: "",
+      exactPickupAddress: "",
 
-  const [calculating, setCalculating] = useState(false);
-  const [booking, setBooking] = useState(false);
-  const [error, setError] = useState("");
+      destination: "",
+      exactDestinationAddress: "",
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+      recipient: "",
+      phone: "",
 
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+      packageType: "",
+      description: "",
 
-    if (name === "pickup" || name === "destination") {
-      setDistance(null);
-      setPrice(null);
-    }
-  };
+      driverNote: "",
 
-  const geocodeLocation = async (location) => {
-    const url =
-      "https://nominatim.openstreetmap.org/search" +
-      "?format=json" +
-      "&limit=1" +
-      "&countrycodes=ng" +
-      "&q=" +
-      encodeURIComponent(location);
-
-    const response = await fetch(url, {
-      headers: {
-        Accept: "application/json",
-      },
+      senderName: "",
+      transferAmount: "",
     });
 
-    if (!response.ok) {
+  const [paymentMethod, setPaymentMethod] =
+    useState("");
+
+  const [distance, setDistance] =
+    useState(null);
+
+  const [price, setPrice] =
+    useState(null);
+
+  const [calculating, setCalculating] =
+    useState(false);
+
+  const [booking, setBooking] =
+    useState(false);
+
+  const [error, setError] =
+    useState("");
+
+  const pricing =
+    getPricing();
+
+  useEffect(() => {
+    const currentUser =
+      getCurrentUser();
+
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
+
+    setUser(currentUser);
+  }, [navigate]);
+
+  function updateField(
+    field,
+    value
+  ) {
+    setForm((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
+  }
+
+  async function getRoadDistance(
+    from,
+    to
+  ) {
+    const fromResponse =
+      await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+          from
+        )}`,
+        {
+          headers: {
+            Accept:
+              "application/json",
+          },
+        }
+      );
+
+    const fromData =
+      await fromResponse.json();
+
+    if (!fromData.length) {
       throw new Error(
-        "The location service is temporarily unavailable."
+        "Pickup location could not be found."
       );
     }
 
-    const data = await response.json();
+    const toResponse =
+      await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(
+          to
+        )}`,
+        {
+          headers: {
+            Accept:
+              "application/json",
+          },
+        }
+      );
 
-    if (!Array.isArray(data) || data.length === 0) {
-      throw new Error(`Location not found: ${location}`);
-    }
+    const toData =
+      await toResponse.json();
 
-    return {
-      lat: Number(data[0].lat),
-      lon: Number(data[0].lon),
-    };
-  };
-
-  const getRoadDistance = async (pickup, destination) => {
-    const pickupCoords = await geocodeLocation(pickup);
-
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const destinationCoords =
-      await geocodeLocation(destination);
-
-    const routeUrl =
-      "https://router.project-osrm.org/route/v1/driving/" +
-      `${pickupCoords.lon},${pickupCoords.lat};` +
-      `${destinationCoords.lon},${destinationCoords.lat}` +
-      "?overview=false";
-
-    const routeResponse = await fetch(routeUrl);
-
-    if (!routeResponse.ok) {
+    if (!toData.length) {
       throw new Error(
-        "Could not calculate the road route."
+        "Destination could not be found."
       );
     }
 
-    const routeData = await routeResponse.json();
+    const start =
+      `${fromData[0].lon},${fromData[0].lat}`;
+
+    const end =
+      `${toData[0].lon},${toData[0].lat}`;
+
+    const routeResponse =
+      await fetch(
+        `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=false`
+      );
+
+    const routeData =
+      await routeResponse.json();
 
     if (
       !routeData.routes ||
-      routeData.routes.length === 0
+      !routeData.routes.length
     ) {
       throw new Error(
-        "No driving route was found between these locations."
+        "Could not calculate a driving route."
       );
     }
 
     return Number(
-      (routeData.routes[0].distance / 1000).toFixed(1)
+      (
+        routeData.routes[0].distance /
+        1000
+      ).toFixed(1)
     );
-  };
+  }
 
-  const calculatePrice = async () => {
+  async function calculatePrice() {
     if (
       !form.pickup.trim() ||
       !form.destination.trim()
     ) {
       setError(
-        "Enter both the pickup area and destination area."
+        "Enter both pickup and destination."
       );
+
       return;
     }
 
@@ -136,64 +189,43 @@ function BookDelivery() {
     setCalculating(true);
 
     try {
-      const calculatedDistance =
+      const km =
         await getRoadDistance(
           form.pickup.trim(),
           form.destination.trim()
         );
 
-      const pricing = getPricing();
-
-      const calculatedPrice =
+      const calculated =
         calculateDeliveryPrice(
-          calculatedDistance,
-          pricing
+          km,
+          getPricing()
         );
 
-      setDistance(calculatedDistance);
-      setPrice(calculatedPrice);
+      setDistance(km);
+      setPrice(calculated);
     } catch (err) {
-      console.error(
-        "Distance calculation error:",
-        err
-      );
-
-      setError(
-        err.message ||
-          "Unable to calculate the route."
-      );
+      console.error(err);
 
       setDistance(null);
       setPrice(null);
+
+      setError(
+        err.message ||
+          "Could not calculate the route."
+      );
     } finally {
       setCalculating(false);
     }
-  };
+  }
 
-  const handlePaymentChange = (method) => {
-    setPaymentMethod(method);
-
-    setForm((previous) => ({
-      ...previous,
-      senderName:
-        method === "transfer"
-          ? previous.senderName
-          : "",
-      transferAmount:
-        method === "transfer"
-          ? previous.transferAmount
-          : "",
-    }));
-
-    setError("");
-  };
-
-  const handleSubmit = (e) => {
+  function handleSubmit(e) {
     e.preventDefault();
 
-    if (booking) return;
-
     setError("");
+
+    if (booking) {
+      return;
+    }
 
     if (!user) {
       navigate("/login");
@@ -202,10 +234,9 @@ function BookDelivery() {
 
     if (
       !form.pickup.trim() ||
+      !form.exactPickupAddress.trim() ||
       !form.destination.trim() ||
-      !form.exactPickupAddress.trim() || // NEW VALIDATION
-      !form.exactAddress.trim() ||
-      !form.driverNote.trim() ||
+      !form.exactDestinationAddress.trim() ||
       !form.recipient.trim() ||
       !form.phone.trim() ||
       !form.packageType
@@ -213,6 +244,7 @@ function BookDelivery() {
       setError(
         "Please complete all required delivery details."
       );
+
       return;
     }
 
@@ -221,97 +253,109 @@ function BookDelivery() {
       price === null
     ) {
       setError(
-        "Please calculate the delivery price first."
+        "Calculate the delivery price before booking."
       );
+
       return;
     }
 
-    if (paymentMethod === "transfer") {
-      if (!form.senderName.trim()) {
-        setError(
-          "Enter the name that will appear on the bank transfer."
-        );
-        return;
-      }
+    if (!paymentMethod) {
+      setError(
+        "Please select a payment method."
+      );
 
-      if (!form.transferAmount) {
-        setError(
-          "Enter the amount you are transferring."
-        );
-        return;
-      }
+      return;
+    }
 
-      const amountSent =
-        Number(form.transferAmount);
-
+    if (
+      paymentMethod ===
+      "transfer"
+    ) {
       if (
-        Number.isNaN(amountSent) ||
-        amountSent <= 0
+        !form.senderName.trim()
       ) {
         setError(
-          "Enter a valid transfer amount."
+          "Enter the transfer sender name."
         );
+
         return;
       }
 
-      if (amountSent < Number(price)) {
+      if (
+        !form.transferAmount
+      ) {
         setError(
-          `The transfer amount cannot be less than ₦${Number(
+          "Enter the transfer amount."
+        );
+
+        return;
+      }
+
+      const amount =
+        Number(
+          form.transferAmount
+        );
+
+      if (
+        Number.isNaN(amount) ||
+        amount < price
+      ) {
+        setError(
+          `Transfer amount must be at least ₦${Number(
             price
           ).toLocaleString()}.`
         );
+
         return;
       }
-    }
-
-    const currentUser = getCurrentUser();
-
-    if (!currentUser) {
-      navigate("/login");
-      return;
     }
 
     setBooking(true);
 
     try {
-      const pricing = getPricing();
-
-      const deliveryId = `ALJ-${Date.now()}`;
+      const finalPricing =
+        getPricing();
 
       const isTransfer =
-        paymentMethod === "transfer";
+        paymentMethod ===
+        "transfer";
+
+      const deliveryId =
+        `ALJ-${Date.now()}`;
 
       createDelivery({
+
         id: deliveryId,
 
-        customerId: currentUser.id,
+        /* CUSTOMER */
+
+        customerId:
+          user.id,
 
         customerName:
-          currentUser.fullName || "",
+          user.fullName || "",
 
         customerEmail:
-          currentUser.email || "",
+          user.email || "",
 
         customerPhone:
-          currentUser.phone || "",
+          user.phone || "",
+
+        /* LOCATIONS */
 
         pickup:
           form.pickup.trim(),
 
+        exactPickupAddress:
+          form.exactPickupAddress.trim(),
+
         destination:
           form.destination.trim(),
 
-        exactPickupAddress: // NEW FIELD
-          form.exactPickupAddress.trim(),
+        exactDestinationAddress:
+          form.exactDestinationAddress.trim(),
 
-        exactAddress:
-          form.exactAddress.trim(),
-
-        driverNote:
-          form.driverNote.trim(),
-
-        description:
-          form.driverNote.trim(),
+        /* RECIPIENT */
 
         recipient:
           form.recipient.trim(),
@@ -319,17 +363,33 @@ function BookDelivery() {
         phone:
           form.phone.trim(),
 
+        recipientPhone:
+          form.phone.trim(),
+
+        /* PACKAGE */
+
         packageType:
           form.packageType,
+
+        description:
+          form.description.trim(),
+
+        driverNote:
+          form.driverNote.trim(),
+
+        driverInstructions:
+          form.driverNote.trim(),
+
+        /* PRICING */
 
         distanceKm:
           distance,
 
         baseFee:
-          pricing.baseFee,
+          finalPricing.baseFee,
 
         pricePerKm:
-          pricing.pricePerKm,
+          finalPricing.pricePerKm,
 
         deliveryPrice:
           price,
@@ -337,16 +397,18 @@ function BookDelivery() {
         totalPrice:
           price,
 
+        price:
+          price,
+
+        /* PAYMENT */
+
         paymentMethod:
           paymentMethod,
 
         paymentStatus:
           isTransfer
-            ? "Awaiting Payment"
+            ? "Pending"
             : "Pay on Delivery",
-
-        paymentReference:
-          null,
 
         transferSenderName:
           isTransfer
@@ -355,24 +417,39 @@ function BookDelivery() {
 
         transferAmount:
           isTransfer
-            ? Number(form.transferAmount)
+            ? Number(
+                form.transferAmount
+              )
             : null,
+
+        paymentConfirmed:
+          false,
+
+        /* STATUS */
 
         status:
           isTransfer
-            ? "Awaiting Payment"
+            ? "Awaiting Payment Confirmation"
             : "Pending",
 
         orderStatus:
           isTransfer
-            ? "Awaiting Payment"
+            ? "Awaiting Payment Confirmation"
             : "Pending",
 
+        /* DRIVER */
+
         assignedDriverId:
-          null,
+          "",
 
         assignedDriverName:
-          null,
+          "",
+
+        assignedDriverPhone:
+          "",
+
+        assignedDriverEmail:
+          "",
 
         acceptedByDriver:
           false,
@@ -383,23 +460,14 @@ function BookDelivery() {
         driverEarningsStatus:
           "Pending",
 
-        paymentConfirmed:
-          false,
-
-        paymentConfirmedAt:
-          null,
-
-        paymentConfirmedBy:
-          null,
-
         createdAt:
-          new Date().toISOString(),
-
-        updatedAt:
           new Date().toISOString(),
       });
 
-      navigate("/customer-dashboard");
+      navigate(
+        "/customer-dashboard"
+      );
+
     } catch (err) {
       console.error(
         "Delivery creation failed:",
@@ -407,184 +475,73 @@ function BookDelivery() {
       );
 
       setError(
-        "Could not create the delivery. Please try again."
+        "Could not create the delivery."
       );
 
       setBooking(false);
     }
-  };
+  }
 
   return (
     <div className="booking-page">
 
-      <aside className="booking-sidebar">
+      <header className="booking-topbar">
 
-        <div className="sidebar-brand">
-          <div className="brand-icon">A</div>
+        <button
+          className="booking-back"
+          onClick={() =>
+            navigate(
+              "/customer-dashboard"
+            )
+          }
+        >
+          ← Dashboard
+        </button>
 
-          <div className="brand-text">
-            <strong>ALEJO</strong>
-            <span>LOGISTICS</span>
-          </div>
+        <div className="booking-brand">
+          <strong>
+            ALEJO
+          </strong>
+
+          <span>
+            LOGISTICS
+          </span>
         </div>
 
-        <nav className="sidebar-nav">
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/customer-dashboard")
-            }
-          >
-            <span>▦</span>
-            <b>Overview</b>
-          </button>
-
-          <button
-            type="button"
-            className="active"
-          >
-            <span>▣</span>
-            <b>Book a delivery</b>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/track-delivery")
-            }
-          >
-            <span>⌖</span>
-            <b>Track deliveries</b>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/delivery-history")
-            }
-          >
-            <span>▤</span>
-            <b>Delivery history</b>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/profile")
-            }
-          >
-            <span>♙</span>
-            <b>My profile</b>
-          </button>
-
-        </nav>
-
-        <div className="sidebar-bottom">
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/profile")
-            }
-          >
-            <span>○</span>
-            <b>My profile</b>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              localStorage.removeItem(
-                "alejoCurrentUser"
-              );
-
-              navigate("/login");
-            }}
-          >
-            <span>↪</span>
-            <b>Sign out</b>
-          </button>
-
+        <div className="booking-user">
+          {user?.fullName}
         </div>
 
-      </aside>
+      </header>
+
 
       <main className="booking-main">
 
-        <header className="booking-header">
+        <div className="booking-title">
 
-          <div>
-            <p className="booking-label">
-              CUSTOMER PORTAL
-            </p>
+          <span>
+            DELIVERY BOOKING
+          </span>
 
-            <h1>
-              Book a delivery
-            </h1>
+          <h1>
+            Book a Delivery
+          </h1>
 
-            <p className="booking-subtitle">
-              Enter your route, package details and payment method.
-            </p>
-          </div>
-
-        </header>
-
-        <div className="steps-container">
-
-          <div className="step-item active">
-            <div className="step-number">
-              1
-            </div>
-
-            <div className="step-content">
-              <strong>
-                Route details
-              </strong>
-
-              <span>
-                Enter delivery information
-              </span>
-            </div>
-          </div>
-
-          <div className="step-connector" />
-
-          <div className="step-item">
-            <div className="step-number">
-              2
-            </div>
-
-            <div className="step-content">
-              <strong>
-                Review & payment
-              </strong>
-
-              <span>
-                Confirm your booking
-              </span>
-            </div>
-          </div>
-
-          <div className="step-connector" />
-
-          <div className="step-item">
-            <div className="step-number">
-              3
-            </div>
-
-            <div className="step-content">
-              <strong>
-                Confirmed
-              </strong>
-
-              <span>
-                Track your delivery
-              </span>
-            </div>
-          </div>
+          <p>
+            Enter the complete pickup,
+            destination and recipient
+            information.
+          </p>
 
         </div>
+
+
+        {error && (
+          <div className="booking-error">
+            {error}
+          </div>
+        )}
+
 
         <div className="booking-content">
 
@@ -593,427 +550,421 @@ function BookDelivery() {
             onSubmit={handleSubmit}
           >
 
-            <div className="card-section">
+            <section className="booking-section">
 
-              <div className="card-section-header">
-
-                <span className="section-badge">
-                  01
-                </span>
+              <div className="booking-section-title">
+                <b>01</b>
 
                 <div>
                   <h2>
-                    Where are we going?
+                    Delivery Route
                   </h2>
 
                   <p>
-                    Enter the pickup and destination information.
+                    Tell us exactly where
+                    the package is going.
                   </p>
                 </div>
-
               </div>
 
-              <div className="form-group">
-
-                <label>
-                  Pickup area{" "}
-                  <span className="required">
-                    *
-                  </span>
-                </label>
-
-                <input
-                  name="pickup"
-                  type="text"
-                  value={form.pickup}
-                  onChange={handleChange}
-                  placeholder="e.g. Challenge, Ibadan"
-                />
-
-                <small>
-                  Enter the main area, estate or landmark.
-                </small>
-
-              </div>
-
-              {/* NEW FIELD - Exact Pickup Address */}
-              <div className="form-group">
-
-                <label>
-                  Exact pickup address{" "}
-                  <span className="required">
-                    *
-                  </span>
-                </label>
-
-                <input
-                  name="exactPickupAddress"
-                  type="text"
-                  value={form.exactPickupAddress}
-                  onChange={handleChange}
-                  placeholder="Enter your exact pickup address"
-                />
-
-                <small>
-                  This is the exact address the driver should pick up from.
-                </small>
-
-              </div>
-
-              <div className="form-group">
-
-                <label>
-                  Destination area{" "}
-                  <span className="required">
-                    *
-                  </span>
-                </label>
-
-                <input
-                  name="destination"
-                  type="text"
-                  value={form.destination}
-                  onChange={handleChange}
-                  placeholder="e.g. Ring Road, Ibadan"
-                />
-
-              </div>
-
-              <div className="form-group">
-
-                <label>
-                  Exact delivery address{" "}
-                  <span className="required">
-                    *
-                  </span>
-                </label>
-
-                <input
-                  name="exactAddress"
-                  type="text"
-                  value={form.exactAddress}
-                  onChange={handleChange}
-                  placeholder="Enter your exact address"
-                />
-
-                <small>
-                  This is the exact address the driver should deliver to.
-                </small>
-
-              </div>
-
-              <div className="form-group">
-
-                <label>
-                  What should we tell the driver?{" "}
-                  <span className="required">
-                    *
-                  </span>
-                </label>
-
-                <textarea
-                  name="driverNote"
-                  value={form.driverNote}
-                  onChange={handleChange}
-                  placeholder="Tell the driver anything important about finding or delivering the package..."
-                  rows="4"
-                />
-
-              </div>
 
               <div className="form-row">
 
-                <div className="form-group">
-
-                  <label>
-                    Recipient name{" "}
-                    <span className="required">
-                      *
-                    </span>
-                  </label>
-
+                <label className="form-group">
+                  Pickup Area
                   <input
-                    name="recipient"
-                    type="text"
-                    value={form.recipient}
-                    onChange={handleChange}
-                    placeholder="Recipient's name"
+                    value={
+                      form.pickup
+                    }
+                    onChange={(e) =>
+                      updateField(
+                        "pickup",
+                        e.target.value
+                      )
+                    }
+                    placeholder="e.g. Ikeja"
+                    required
                   />
-
-                </div>
-
-                <div className="form-group">
-
-                  <label>
-                    Recipient phone{" "}
-                    <span className="required">
-                      *
-                    </span>
-                  </label>
-
-                  <input
-                    name="phone"
-                    type="tel"
-                    value={form.phone}
-                    onChange={handleChange}
-                    placeholder="080..."
-                  />
-
-                </div>
-
-              </div>
-
-              <div className="form-group">
-
-                <label>
-                  Package type{" "}
-                  <span className="required">
-                    *
-                  </span>
                 </label>
 
-                <select
-                  name="packageType"
-                  value={form.packageType}
-                  onChange={handleChange}
-                >
-
-                  <option value="">
-                    Select package
-                  </option>
-
-                  <option value="Document">
-                    Document
-                  </option>
-
-                  <option value="Food">
-                    Food
-                  </option>
-
-                  <option value="Clothing">
-                    Clothing
-                  </option>
-
-                  <option value="Electronics">
-                    Electronics
-                  </option>
-
-                  <option value="Parcel">
-                    Parcel
-                  </option>
-
-                  <option value="Other">
-                    Other
-                  </option>
-
-                </select>
+                <label className="form-group">
+                  Destination Area
+                  <input
+                    value={
+                      form.destination
+                    }
+                    onChange={(e) =>
+                      updateField(
+                        "destination",
+                        e.target.value
+                      )
+                    }
+                    placeholder="e.g. Yaba"
+                    required
+                  />
+                </label>
 
               </div>
 
-            </div>
 
-            <div className="card-section">
+              <label className="form-group">
+                Exact Pickup Address
 
-              <div className="card-section-header">
+                <input
+                  value={
+                    form.exactPickupAddress
+                  }
+                  onChange={(e) =>
+                    updateField(
+                      "exactPickupAddress",
+                      e.target.value
+                    )
+                  }
+                  placeholder="House number, street, landmark..."
+                  required
+                />
+              </label>
 
-                <span className="section-badge">
-                  02
-                </span>
+
+              <label className="form-group">
+                Exact Destination Address
+
+                <input
+                  value={
+                    form.exactDestinationAddress
+                  }
+                  onChange={(e) =>
+                    updateField(
+                      "exactDestinationAddress",
+                      e.target.value
+                    )
+                  }
+                  placeholder="House number, street, landmark..."
+                  required
+                />
+              </label>
+
+
+              <button
+                type="button"
+                className="calculate-button"
+                onClick={
+                  calculatePrice
+                }
+                disabled={
+                  calculating
+                }
+              >
+                {calculating
+                  ? "Calculating..."
+                  : "Calculate Delivery Price"}
+              </button>
+
+            </section>
+
+
+            <section className="booking-section">
+
+              <div className="booking-section-title">
+                <b>02</b>
 
                 <div>
                   <h2>
-                    Payment method
+                    Recipient &amp; Package
                   </h2>
 
                   <p>
-                    Choose how you want to pay.
+                    Give the driver everything
+                    needed to complete delivery.
                   </p>
                 </div>
+              </div>
+
+
+              <div className="form-row">
+
+                <label className="form-group">
+                  Recipient Name
+
+                  <input
+                    value={
+                      form.recipient
+                    }
+                    onChange={(e) =>
+                      updateField(
+                        "recipient",
+                        e.target.value
+                      )
+                    }
+                    placeholder="Recipient full name"
+                    required
+                  />
+                </label>
+
+
+                <label className="form-group">
+                  Recipient Phone
+
+                  <input
+                    type="tel"
+                    value={
+                      form.phone
+                    }
+                    onChange={(e) =>
+                      updateField(
+                        "phone",
+                        e.target.value
+                      )
+                    }
+                    placeholder="080..."
+                    required
+                  />
+                </label>
 
               </div>
+
+
+              <div className="form-row">
+
+                <label className="form-group">
+                  Package Type
+
+                  <select
+                    value={
+                      form.packageType
+                    }
+                    onChange={(e) =>
+                      updateField(
+                        "packageType",
+                        e.target.value
+                      )
+                    }
+                    required
+                  >
+                    <option value="">
+                      Select package type
+                    </option>
+
+                    <option value="Documents">
+                      Documents
+                    </option>
+
+                    <option value="Food">
+                      Food
+                    </option>
+
+                    <option value="Clothing">
+                      Clothing
+                    </option>
+
+                    <option value="Electronics">
+                      Electronics
+                    </option>
+
+                    <option value="Fragile">
+                      Fragile Item
+                    </option>
+
+                    <option value="Other">
+                      Other
+                    </option>
+                  </select>
+                </label>
+
+
+                <label className="form-group">
+                  Package Description
+
+                  <input
+                    value={
+                      form.description
+                    }
+                    onChange={(e) =>
+                      updateField(
+                        "description",
+                        e.target.value
+                      )
+                    }
+                    placeholder="What is inside?"
+                  />
+                </label>
+
+              </div>
+
+
+              <label className="form-group">
+                Driver Instructions
+
+                <textarea
+                  value={
+                    form.driverNote
+                  }
+                  onChange={(e) =>
+                    updateField(
+                      "driverNote",
+                      e.target.value
+                    )
+                  }
+                  placeholder="Gate number, landmark, special instructions..."
+                  rows="4"
+                />
+              </label>
+
+            </section>
+
+
+            <section className="booking-section">
+
+              <div className="booking-section-title">
+                <b>03</b>
+
+                <div>
+                  <h2>
+                    Payment
+                  </h2>
+
+                  <p>
+                    Choose how you want
+                    to pay.
+                  </p>
+                </div>
+              </div>
+
 
               <div className="payment-options">
 
                 <button
                   type="button"
-                  className={`payment-option ${
-                    paymentMethod === "transfer"
-                      ? "selected"
-                      : ""
-                  }`}
+                  className={
+                    paymentMethod ===
+                    "transfer"
+                      ? "payment-option selected"
+                      : "payment-option"
+                  }
                   onClick={() =>
-                    handlePaymentChange(
+                    setPaymentMethod(
                       "transfer"
                     )
                   }
                 >
+                  <strong>
+                    Bank Transfer
+                  </strong>
 
-                  <div className="payment-icon">
-                    ⇄
-                  </div>
-
-                  <div className="payment-text">
-                    <strong>
-                      Bank Transfer
-                    </strong>
-
-                    <span>
-                      Payment must be confirmed before dispatch.
-                    </span>
-                  </div>
-
-                  <div className="payment-check">
-                    {paymentMethod ===
-                      "transfer" && "✓"}
-                  </div>
-
+                  <span>
+                    Pay before delivery
+                  </span>
                 </button>
+
 
                 <button
                   type="button"
-                  className={`payment-option ${
-                    paymentMethod === "cash"
-                      ? "selected"
-                      : ""
-                  }`}
+                  className={
+                    paymentMethod ===
+                    "cash"
+                      ? "payment-option selected"
+                      : "payment-option"
+                  }
                   onClick={() =>
-                    handlePaymentChange(
+                    setPaymentMethod(
                       "cash"
                     )
                   }
                 >
+                  <strong>
+                    Cash
+                  </strong>
 
-                  <div className="payment-icon cash">
-                    ₦
-                  </div>
-
-                  <div className="payment-text">
-                    <strong>
-                      Cash on Delivery
-                    </strong>
-
-                    <span>
-                      Pay the driver when the package arrives.
-                    </span>
-                  </div>
-
-                  <div className="payment-check">
-                    {paymentMethod ===
-                      "cash" && "✓"}
-                  </div>
-
+                  <span>
+                    Pay on delivery
+                  </span>
                 </button>
 
               </div>
 
-              {paymentMethod === "transfer" && (
 
-                <div className="transfer-details">
+              {paymentMethod ===
+                "transfer" && (
 
-                  <div className="transfer-header">
+                <div className="transfer-box">
 
-                    <div>
-                      <strong>
-                        Bank transfer details
-                      </strong>
+                  <h3>
+                    Bank Transfer
+                  </h3>
 
-                      <p>
-                        Transfer the delivery amount and enter the sender details.
-                      </p>
-                    </div>
-
-                    <span className="secure-badge">
-                      SECURE PAYMENT
-                    </span>
-
-                  </div>
-
-                  <div className="bank-details-grid">
+                  <div className="bank-details">
 
                     <div>
-                      <small>
-                        BANK
-                      </small>
+                      <span>
+                        Bank
+                      </span>
 
                       <strong>
-                       Providus Bank
+                        Providus Bank
                       </strong>
                     </div>
 
                     <div>
-                      <small>
-                        ACCOUNT NUMBER
-                      </small>
+                      <span>
+                        Account Number
+                      </span>
 
-                      <strong className="account-number">
-                       9653727050
+                      <strong>
+                        9653727050
                       </strong>
                     </div>
 
                     <div>
-                      <small>
-                        ACCOUNT NAME
-                      </small>
+                      <span>
+                        Account Name
+                      </span>
 
                       <strong>
-                      Alejo Logistics
+                        Alejo Logistics
                       </strong>
                     </div>
 
                   </div>
 
-                  <div className="transfer-form-row">
 
-                    <div className="form-group">
+                  <div className="form-row">
 
-                      <label>
-                        Name on transfer{" "}
-                        <span className="required">
-                          *
-                        </span>
-                      </label>
+                    <label className="form-group">
+                      Transfer Sender Name
 
                       <input
-                        name="senderName"
-                        type="text"
-                        value={form.senderName}
-                        onChange={handleChange}
-                        placeholder="Name the admin will see"
+                        value={
+                          form.senderName
+                        }
+                        onChange={(e) =>
+                          updateField(
+                            "senderName",
+                            e.target.value
+                          )
+                        }
+                        required
                       />
+                    </label>
 
-                    </div>
 
-                    <div className="form-group">
+                    <label className="form-group">
+                      Amount Transferred
 
-                      <label>
-                        Amount sent{" "}
-                        <span className="required">
-                          *
-                        </span>
-                      </label>
-
-                      <div className="amount-input">
-
-                        <span>
-                          ₦
-                        </span>
-
-                        <input
-                          name="transferAmount"
-                          type="number"
-                          min="0"
-                          value={
-                            form.transferAmount
-                          }
-                          onChange={
-                            handleChange
-                          }
-                          placeholder="0"
-                        />
-
-                      </div>
-
-                    </div>
+                      <input
+                        type="number"
+                        min={price || 0}
+                        value={
+                          form.transferAmount
+                        }
+                        onChange={(e) =>
+                          updateField(
+                            "transferAmount",
+                            e.target.value
+                          )
+                        }
+                        required
+                      />
+                    </label>
 
                   </div>
 
@@ -1021,192 +972,125 @@ function BookDelivery() {
 
               )}
 
-            </div>
+            </section>
 
-            {error && (
 
-              <div className="error-message">
-                <span>!</span>
-                {error}
-              </div>
-
-            )}
-
-            {distance !== null &&
-              price !== null && (
-
-              <div className="price-display">
-
-                <div>
-                  <span>
-                    Road distance
-                  </span>
-
-                  <strong>
-                    {distance} km
-                  </strong>
-                </div>
-
-                <div>
-                  <span>
-                    Delivery price
-                  </span>
-
-                  <strong>
-                    ₦
-                    {Number(
-                      price
-                    ).toLocaleString()}
-                  </strong>
-                </div>
-
-              </div>
-
-            )}
-
-            <div className="action-buttons">
-
-              <button
-                type="button"
-                className="btn-calculate"
-                onClick={calculatePrice}
-                disabled={calculating}
-              >
-                {calculating
-                  ? "Calculating route..."
-                  : "Calculate delivery price →"}
-              </button>
-
-              {price !== null && (
-
-                <button
-                  type="submit"
-                  className="btn-book"
-                  disabled={booking}
-                >
-                  {booking
-                    ? "Creating booking..."
-                    : `Confirm booking • ₦${Number(
-                        price
-                      ).toLocaleString()}`}
-                </button>
-
-              )}
-
-            </div>
+            <button
+              type="submit"
+              className="book-submit"
+              disabled={booking}
+            >
+              {booking
+                ? "Booking..."
+                : "Confirm Delivery Booking"}
+            </button>
 
           </form>
 
-          <aside className="booking-sidebar-right">
 
-            <div className="info-card map-card">
+          <aside className="booking-summary">
 
-              <div className="map-grid" />
+            <div className="summary-card">
 
-              <div className="map-route-visual">
+              <span>
+                ESTIMATED DELIVERY
+              </span>
 
-                <span className="map-point pickup" />
+              <strong>
+                {price === null
+                  ? "—"
+                  : `₦${Number(
+                      price
+                    ).toLocaleString()}`}
+              </strong>
 
-                <div className="route-line">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-
-                <span className="map-point destination" />
-
-              </div>
-
-              <div className="map-label">
-                <span>⌖</span>
-                Delivery network
-              </div>
-
-            </div>
-
-            <div className="info-card">
-
-              <h3>
-                Why Alejo?
-              </h3>
-
-              <div className="benefit-list">
-
-                <div className="benefit-item">
-                  <span>✓</span>
-                  <p>
-                    Verified delivery drivers
-                  </p>
-                </div>
-
-                <div className="benefit-item">
-                  <span>✓</span>
-                  <p>
-                    Live delivery tracking
-                  </p>
-                </div>
-
-                <div className="benefit-item">
-                  <span>✓</span>
-                  <p>
-                    Transparent pricing
-                  </p>
-                </div>
-
-                <div className="benefit-item">
-                  <span>✓</span>
-                  <p>
-                    Fast local delivery
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-
-            {price !== null && (
-
-              <div className="info-card price-summary">
-
-                <small>
-                  ESTIMATED DELIVERY
-                </small>
-
-                <strong>
-                  ₦
-                  {Number(
-                    price
-                  ).toLocaleString()}
-                </strong>
-
-                <span>
+              {distance !== null && (
+                <p>
                   {distance} km road distance
+                </p>
+              )}
+
+              <div className="summary-line">
+                <span>
+                  Base Fee
                 </span>
 
-                <div className="payment-summary">
+                <b>
+                  ₦{Number(
+                    pricing.baseFee
+                  ).toLocaleString()}
+                </b>
+              </div>
 
-                  <small>
+              <div className="summary-line">
+                <span>
+                  Price / KM
+                </span>
+
+                <b>
+                  ₦{Number(
+                    pricing.pricePerKm
+                  ).toLocaleString()}
+                </b>
+              </div>
+
+              {paymentMethod && (
+                <div className="summary-payment">
+                  <span>
                     PAYMENT
-                  </small>
+                  </span>
 
-                  <b>
+                  <strong>
                     {paymentMethod ===
                     "transfer"
                       ? "Bank Transfer"
                       : "Cash on Delivery"}
-                  </b>
-
+                  </strong>
                 </div>
+              )}
 
-              </div>
+            </div>
 
-            )}
+
+            <div className="summary-card">
+
+              <h3>
+                Your delivery includes
+              </h3>
+
+              <p>
+                ✓ Exact pickup address
+              </p>
+
+              <p>
+                ✓ Exact destination address
+              </p>
+
+              <p>
+                ✓ Recipient information
+              </p>
+
+              <p>
+                ✓ Driver instructions
+              </p>
+
+              <p>
+                ✓ Road distance calculation
+              </p>
+
+              <p>
+                ✓ Transparent pricing
+              </p>
+
+            </div>
 
           </aside>
 
         </div>
 
       </main>
+
+      <Footer />
 
     </div>
   );

@@ -1,417 +1,872 @@
-// src/utils/deliveryStorage.js
-
 const DELIVERY_KEY = "alejoDeliveries";
 
-/* =========================================================
-   INTERNAL HELPERS
-========================================================= */
-
-function generateId() {
-  return (
-    "DEL-" +
-    Date.now().toString(36).toUpperCase() +
-    "-" +
-    Math.random().toString(36).substring(2, 7).toUpperCase()
-  );
-}
-
-function normalizeDelivery(delivery) {
-  return {
-    id: delivery.id || generateId(),
-
-    customerId: delivery.customerId || "",
-    customerName: delivery.customerName || "",
-    customerEmail: delivery.customerEmail || "",
-
-    pickupAddress: delivery.pickupAddress || "",
-    deliveryAddress: delivery.deliveryAddress || "",
-
-    pickupLocation: delivery.pickupLocation || null,
-    deliveryLocation: delivery.deliveryLocation || null,
-
-    distanceKm: Number(delivery.distanceKm) || 0,
-
-    packageType: delivery.packageType || "Package",
-
-    price: Number(delivery.price) || 0,
-    deliveryFee: Number(delivery.deliveryFee) || Number(delivery.price) || 0,
-
-    paymentMethod: delivery.paymentMethod || "transfer",
-    paymentStatus: delivery.paymentStatus || "Pending",
-
-    status: delivery.status || "Pending",
-
-    driverId: delivery.driverId || null,
-    driverName: delivery.driverName || "",
-    driverPhone: delivery.driverPhone || "",
-
-    driverFee: Number(delivery.driverFee) || 0,
-    cashToCollect: Boolean(delivery.cashToCollect),
-
-    approved: Boolean(delivery.approved),
-    rejected: Boolean(delivery.rejected),
-
-    rejectionReason: delivery.rejectionReason || "",
-
-    createdAt: delivery.createdAt || new Date().toISOString(),
-    updatedAt: delivery.updatedAt || new Date().toISOString(),
-
-    acceptedAt: delivery.acceptedAt || null,
-    assignedAt: delivery.assignedAt || null,
-    pickedUpAt: delivery.pickedUpAt || null,
-    deliveredAt: delivery.deliveredAt || null,
-    releasedAt: delivery.releasedAt || null,
-  };
-}
-
-/* =========================================================
-   GET / SAVE
-========================================================= */
+/* ============================================
+   GET ALL
+============================================ */
 
 export function getDeliveries() {
   try {
-    const saved = localStorage.getItem(DELIVERY_KEY);
+    const saved =
+      localStorage.getItem(
+        DELIVERY_KEY
+      );
 
     if (!saved) {
       return [];
     }
 
-    const parsed = JSON.parse(saved);
+    const parsed =
+      JSON.parse(saved);
 
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.map(normalizeDelivery);
-  } catch (error) {
-    console.error("Error loading deliveries:", error);
-    return [];
-  }
-}
-
-export function saveDeliveries(deliveries) {
-  try {
-    const safeDeliveries = Array.isArray(deliveries)
-      ? deliveries.map(normalizeDelivery)
+    return Array.isArray(parsed)
+      ? parsed
       : [];
-
-    localStorage.setItem(
-      DELIVERY_KEY,
-      JSON.stringify(safeDeliveries)
+  } catch (error) {
+    console.error(
+      "Could not load deliveries:",
+      error
     );
 
-    return safeDeliveries;
-  } catch (error) {
-    console.error("Error saving deliveries:", error);
     return [];
   }
 }
 
-/* =========================================================
-   GET ONE DELIVERY
-========================================================= */
 
-export function getDeliveryById(deliveryId) {
-  if (!deliveryId) {
-    return null;
-  }
+/* ============================================
+   SAVE ALL
+============================================ */
 
-  const deliveries = getDeliveries();
+export function saveDeliveries(
+  deliveries
+) {
+  const safe =
+    Array.isArray(deliveries)
+      ? deliveries
+      : [];
 
-  return (
-    deliveries.find(
-      (delivery) => String(delivery.id) === String(deliveryId)
-    ) || null
+  localStorage.setItem(
+    DELIVERY_KEY,
+    JSON.stringify(safe)
   );
+
+  return safe;
 }
 
-/* =========================================================
-   CREATE DELIVERY
-========================================================= */
 
-export function createDelivery(deliveryData = {}) {
-  const deliveries = getDeliveries();
+/* ============================================
+   GET ONE
+============================================ */
 
-  const delivery = normalizeDelivery({
-    ...deliveryData,
+export function getDeliveryById(
+  deliveryId
+) {
+  return getDeliveries().find(
+    (delivery) =>
+      delivery.id === deliveryId
+  ) || null;
+}
 
-    id: deliveryData.id || generateId(),
 
-    status: deliveryData.status || "Pending",
+/* ============================================
+   CREATE
+============================================ */
+
+export function createDelivery(
+  data
+) {
+  const deliveries =
+    getDeliveries();
+
+  const now =
+    new Date().toISOString();
+
+  const price = Number(
+    data.totalPrice ??
+      data.deliveryPrice ??
+      data.price ??
+      0
+  );
+
+  const paymentMethod =
+    data.paymentMethod || "";
+
+  const delivery = {
+    /* =========================
+       ID
+    ========================= */
+
+    id:
+      data.id ||
+      `ALJ-${Date.now()}`,
+
+    /* =========================
+       CUSTOMER
+    ========================= */
+
+    customerId:
+      data.customerId || "",
+
+    customerName:
+      data.customerName || "",
+
+    customerEmail:
+      data.customerEmail || "",
+
+    customerPhone:
+      data.customerPhone || "",
+
+    /* =========================
+       LOCATIONS
+    ========================= */
+
+    pickup:
+      data.pickup || "",
+
+    exactPickupAddress:
+      data.exactPickupAddress ||
+      data.pickupAddress ||
+      "",
+
+    destination:
+      data.destination || "",
+
+    exactDestinationAddress:
+      data.exactDestinationAddress ||
+      data.destinationAddress ||
+      data.exactAddress ||
+      "",
+
+    /* =========================
+       RECIPIENT
+    ========================= */
+
+    recipient:
+      data.recipient || "",
+
+    phone:
+      data.phone ||
+      data.recipientPhone ||
+      "",
+
+    recipientPhone:
+      data.recipientPhone ||
+      data.phone ||
+      "",
+
+    /* =========================
+       PACKAGE
+    ========================= */
+
+    packageType:
+      data.packageType || "",
+
+    description:
+      data.description || "",
+
+    driverNote:
+      data.driverNote ||
+      data.driverInstructions ||
+      "",
+
+    driverInstructions:
+      data.driverInstructions ||
+      data.driverNote ||
+      "",
+
+    /* =========================
+       DISTANCE
+    ========================= */
+
+    distanceKm:
+      Number(data.distanceKm) || 0,
+
+    /* =========================
+       PRICING
+    ========================= */
+
+    baseFee:
+      Number(data.baseFee) || 0,
+
+    pricePerKm:
+      Number(data.pricePerKm) || 0,
+
+    deliveryPrice:
+      price,
+
+    totalPrice:
+      price,
+
+    price:
+      price,
+
+    /* =========================
+       PAYMENT
+    ========================= */
+
+    paymentMethod,
 
     paymentStatus:
-      deliveryData.paymentStatus || "Pending",
+      data.paymentStatus ||
+      (
+        paymentMethod === "transfer"
+          ? "Pending"
+          : "Pay on Delivery"
+      ),
+
+    paymentReference:
+      data.paymentReference ||
+      null,
+
+    transferSenderName:
+      data.transferSenderName ||
+      null,
+
+    transferAmount:
+      data.transferAmount != null
+        ? Number(
+            data.transferAmount
+          )
+        : null,
+
+    paymentConfirmed:
+      Boolean(
+        data.paymentConfirmed
+      ),
+
+    paymentConfirmedAt:
+      data.paymentConfirmedAt ||
+      null,
+
+    paymentConfirmedBy:
+      data.paymentConfirmedBy ||
+      null,
+
+    paidAt:
+      data.paidAt || null,
+
+    /* =========================
+       STATUS
+    ========================= */
+
+    status:
+      data.status || "Pending",
+
+    orderStatus:
+      data.orderStatus ||
+      data.status ||
+      "Pending",
+
+    rejectionReason:
+      data.rejectionReason || "",
+
+    /* =========================
+       DRIVER
+    ========================= */
+
+    assignedDriverId:
+      data.assignedDriverId || "",
+
+    assignedDriverName:
+      data.assignedDriverName || "",
+
+    assignedDriverPhone:
+      data.assignedDriverPhone || "",
+
+    assignedDriverEmail:
+      data.assignedDriverEmail || "",
+
+    acceptedByDriver:
+      Boolean(
+        data.acceptedByDriver
+      ),
+
+    acceptedAt:
+      data.acceptedAt || null,
+
+    driverFee:
+      Number(data.driverFee) || 0,
+
+    driverEarningsStatus:
+      data.driverEarningsStatus ||
+      "Pending",
+
+    /* =========================
+       DATES
+    ========================= */
 
     createdAt:
-      deliveryData.createdAt || new Date().toISOString(),
+      data.createdAt || now,
 
-    updatedAt: new Date().toISOString(),
-  });
+    updatedAt: now,
 
-  deliveries.unshift(delivery);
+    approvedAt:
+      data.approvedAt || null,
 
-  saveDeliveries(deliveries);
+    rejectedAt:
+      data.rejectedAt || null,
+
+    deliveredAt:
+      data.deliveredAt || null,
+  };
+
+  deliveries.push(
+    delivery
+  );
+
+  saveDeliveries(
+    deliveries
+  );
 
   return delivery;
 }
 
-/* =========================================================
-   UPDATE DELIVERY
-========================================================= */
 
-function updateDelivery(deliveryId, changes = {}) {
-  const deliveries = getDeliveries();
+/* ============================================
+   ASSIGN DRIVER
+============================================ */
 
-  const index = deliveries.findIndex(
-    (delivery) =>
-      String(delivery.id) === String(deliveryId)
+export function assignDelivery(
+  deliveryId,
+  driver
+) {
+  const deliveries =
+    getDeliveries();
+
+  const updated =
+    deliveries.map(
+      (delivery) => {
+        if (
+          delivery.id !==
+          deliveryId
+        ) {
+          return delivery;
+        }
+
+        return {
+          ...delivery,
+
+          assignedDriverId:
+            driver?.id || "",
+
+          assignedDriverName:
+            driver?.name ||
+            driver?.fullName ||
+            "",
+
+          assignedDriverPhone:
+            driver?.phone || "",
+
+          assignedDriverEmail:
+            driver?.email || "",
+
+          acceptedByDriver:
+            false,
+
+          acceptedAt: null,
+
+          updatedAt:
+            new Date().toISOString(),
+        };
+      }
+    );
+
+  saveDeliveries(
+    updated
   );
 
-  if (index === -1) {
-    return null;
-  }
-
-  deliveries[index] = normalizeDelivery({
-    ...deliveries[index],
-    ...changes,
-    updatedAt: new Date().toISOString(),
-  });
-
-  saveDeliveries(deliveries);
-
-  return deliveries[index];
+  return updated;
 }
 
-/* =========================================================
-   ASSIGN DELIVERY
-========================================================= */
 
-export function assignDelivery(deliveryId, driver) {
-  if (!driver) {
-    return null;
-  }
+/* ============================================
+   UNASSIGN
+============================================ */
 
-  return updateDelivery(deliveryId, {
-    driverId:
-      driver.id ||
-      driver.driverId ||
-      null,
-
-    driverName:
-      driver.name ||
-      driver.fullName ||
-      driver.driverName ||
-      "",
-
-    driverPhone:
-      driver.phone ||
-      driver.phoneNumber ||
-      driver.driverPhone ||
-      "",
-
-    assignedAt: new Date().toISOString(),
-
-    status: "Assigned",
-
-    approved: true,
-    rejected: false,
-  });
-}
-
-/* =========================================================
-   UNASSIGN DELIVERY
-========================================================= */
-
-export function unassignDelivery(deliveryId) {
-  return updateDelivery(deliveryId, {
-    driverId: null,
-    driverName: "",
-    driverPhone: "",
-    assignedAt: null,
-
-    status: "Pending",
-  });
-}
-
-/* =========================================================
-   DRIVER ACCEPT DELIVERY
-========================================================= */
-
-export function acceptDelivery(deliveryId, driver) {
-  if (!driver) {
-    return null;
-  }
-
-  const delivery = getDeliveryById(deliveryId);
-
-  if (!delivery) {
-    return null;
-  }
-
-  /*
-    If the admin has already assigned this order to another
-    driver, don't allow another driver to take it.
-  */
-
-  if (
-    delivery.driverId &&
-    String(delivery.driverId) !==
-      String(driver.id || driver.driverId)
-  ) {
-    return null;
-  }
-
-  return updateDelivery(deliveryId, {
-    driverId:
-      driver.id ||
-      driver.driverId ||
-      delivery.driverId,
-
-    driverName:
-      driver.name ||
-      driver.fullName ||
-      driver.driverName ||
-      delivery.driverName,
-
-    driverPhone:
-      driver.phone ||
-      driver.phoneNumber ||
-      driver.driverPhone ||
-      delivery.driverPhone,
-
-    status: "Accepted",
-
-    acceptedAt: new Date().toISOString(),
-
-    rejected: false,
-  });
-}
-
-/* =========================================================
-   RELEASE / COMPLETE DELIVERY
-========================================================= */
-
-export function releaseDelivery(deliveryId) {
-  const delivery = getDeliveryById(deliveryId);
-
-  if (!delivery) {
-    return null;
-  }
-
-  return updateDelivery(deliveryId, {
-    status: "Released",
-    releasedAt: new Date().toISOString(),
-  });
-}
-
-/* =========================================================
-   UPDATE STATUS
-========================================================= */
-
-export function updateDeliveryStatus(
-  deliveryId,
-  status
+export function unassignDelivery(
+  deliveryId
 ) {
-  if (!deliveryId || !status) {
-    return null;
-  }
+  const deliveries =
+    getDeliveries();
 
-  const changes = {
-    status,
-  };
+  const updated =
+    deliveries.map(
+      (delivery) => {
+        if (
+          delivery.id !==
+          deliveryId
+        ) {
+          return delivery;
+        }
 
-  if (status === "Picked Up") {
-    changes.pickedUpAt = new Date().toISOString();
-  }
+        return {
+          ...delivery,
 
-  if (status === "Delivered") {
-    changes.deliveredAt = new Date().toISOString();
-  }
+          assignedDriverId: "",
+          assignedDriverName: "",
+          assignedDriverPhone: "",
+          assignedDriverEmail: "",
 
-  return updateDelivery(deliveryId, changes);
+          acceptedByDriver:
+            false,
+
+          acceptedAt: null,
+
+          status:
+            delivery.status ===
+              "Delivered"
+              ? "Delivered"
+              : "Approved",
+
+          orderStatus:
+            delivery.status ===
+              "Delivered"
+              ? "Delivered"
+              : "Approved",
+
+          updatedAt:
+            new Date().toISOString(),
+        };
+      }
+    );
+
+  saveDeliveries(
+    updated
+  );
+
+  return updated;
 }
 
-/* =========================================================
-   APPROVE DELIVERY
-========================================================= */
 
-export function approveDelivery(deliveryId) {
-  return updateDelivery(deliveryId, {
-    approved: true,
-    rejected: false,
-    rejectionReason: "",
+/* ============================================
+   APPROVE
+============================================ */
 
-    status: "Approved",
-  });
+export function approveDelivery(
+  deliveryId
+) {
+  const deliveries =
+    getDeliveries();
+
+  const updated =
+    deliveries.map(
+      (delivery) => {
+        if (
+          delivery.id !==
+          deliveryId
+        ) {
+          return delivery;
+        }
+
+        return {
+          ...delivery,
+
+          status: "Approved",
+          orderStatus: "Approved",
+
+          rejectionReason: "",
+          rejectedAt: null,
+
+          approvedAt:
+            new Date().toISOString(),
+
+          updatedAt:
+            new Date().toISOString(),
+        };
+      }
+    );
+
+  saveDeliveries(
+    updated
+  );
+
+  return updated;
 }
 
-/* =========================================================
-   REJECT DELIVERY
-========================================================= */
+
+/* ============================================
+   REJECT
+============================================ */
 
 export function rejectDelivery(
   deliveryId,
   reason = ""
 ) {
-  return updateDelivery(deliveryId, {
-    approved: false,
-    rejected: true,
+  const deliveries =
+    getDeliveries();
 
-    rejectionReason: reason,
+  const updated =
+    deliveries.map(
+      (delivery) => {
+        if (
+          delivery.id !==
+          deliveryId
+        ) {
+          return delivery;
+        }
 
-    status: "Rejected",
-  });
-}
+        return {
+          ...delivery,
 
-/* =========================================================
-   MARK DELIVERY AS PAID
-========================================================= */
+          status: "Rejected",
+          orderStatus: "Rejected",
 
-export function markDeliveryPaid(deliveryId) {
-  return updateDelivery(deliveryId, {
-    paymentStatus: "Paid",
-  });
-}
+          rejectionReason:
+            reason,
 
-/* =========================================================
-   MARK CASH TO COLLECT
-========================================================= */
+          rejectedAt:
+            new Date().toISOString(),
 
-export function markCashToCollect(
-  deliveryId,
-  value = true
-) {
-  return updateDelivery(deliveryId, {
-    cashToCollect: Boolean(value),
+          assignedDriverId: "",
+          assignedDriverName: "",
+          assignedDriverPhone: "",
+          assignedDriverEmail: "",
 
-    paymentStatus: value
-      ? "Cash to Collect"
-      : "Pending",
-  });
-}
+          acceptedByDriver:
+            false,
 
-/* =========================================================
-   DELETE DELIVERY
-========================================================= */
+          acceptedAt: null,
 
-export function deleteDelivery(deliveryId) {
-  const deliveries = getDeliveries();
+          updatedAt:
+            new Date().toISOString(),
+        };
+      }
+    );
 
-  const filtered = deliveries.filter(
-    (delivery) =>
-      String(delivery.id) !== String(deliveryId)
+  saveDeliveries(
+    updated
   );
 
-  saveDeliveries(filtered);
-
-  return filtered;
+  return updated;
 }
 
-/* =========================================================
-   CLEAR ALL DELIVERIES
-========================================================= */
 
-export function clearDeliveries() {
-  localStorage.removeItem(DELIVERY_KEY);
-  return [];
+/* ============================================
+   MARK PAID
+============================================ */
+
+export function markDeliveryPaid(
+  deliveryId,
+  paymentMethod = "Bank Transfer"
+) {
+  const deliveries =
+    getDeliveries();
+
+  const updated =
+    deliveries.map(
+      (delivery) => {
+        if (
+          delivery.id !==
+          deliveryId
+        ) {
+          return delivery;
+        }
+
+        return {
+          ...delivery,
+
+          paymentStatus:
+            "Paid",
+
+          paymentMethod,
+
+          paymentConfirmed:
+            true,
+
+          paymentConfirmedAt:
+            new Date().toISOString(),
+
+          paidAt:
+            new Date().toISOString(),
+
+          updatedAt:
+            new Date().toISOString(),
+        };
+      }
+    );
+
+  saveDeliveries(
+    updated
+  );
+
+  return updated;
+}
+
+
+/* ============================================
+   CASH TO COLLECT
+============================================ */
+
+export function markCashToCollect(
+  deliveryId
+) {
+  const deliveries =
+    getDeliveries();
+
+  const updated =
+    deliveries.map(
+      (delivery) => {
+        if (
+          delivery.id !==
+          deliveryId
+        ) {
+          return delivery;
+        }
+
+        return {
+          ...delivery,
+
+          paymentStatus:
+            "Cash to Collect",
+
+          paymentMethod:
+            "cash",
+
+          paymentConfirmed:
+            false,
+
+          paidAt: null,
+
+          updatedAt:
+            new Date().toISOString(),
+        };
+      }
+    );
+
+  saveDeliveries(
+    updated
+  );
+
+  return updated;
+}
+
+
+/* ============================================
+   DRIVER ACCEPT
+============================================ */
+
+export function acceptDelivery(
+  deliveryId,
+  driver
+) {
+  const deliveries =
+    getDeliveries();
+
+  const delivery =
+    deliveries.find(
+      (item) =>
+        item.id ===
+        deliveryId
+    );
+
+  if (!delivery) {
+    return {
+      success: false,
+      message:
+        "Delivery not found.",
+      deliveries,
+    };
+  }
+
+  if (
+    delivery.status ===
+    "Rejected"
+  ) {
+    return {
+      success: false,
+      message:
+        "This delivery was rejected.",
+      deliveries,
+    };
+  }
+
+  if (
+    delivery.acceptedByDriver &&
+    delivery.assignedDriverId !==
+      driver?.id
+  ) {
+    return {
+      success: false,
+      message:
+        "Another driver has already accepted this delivery.",
+      deliveries,
+    };
+  }
+
+  if (
+    delivery.assignedDriverId &&
+    delivery.assignedDriverId !==
+      driver?.id
+  ) {
+    return {
+      success: false,
+      message:
+        "This delivery is assigned to another driver.",
+      deliveries,
+    };
+  }
+
+  const updated =
+    deliveries.map(
+      (item) => {
+        if (
+          item.id !==
+          deliveryId
+        ) {
+          return item;
+        }
+
+        return {
+          ...item,
+
+          assignedDriverId:
+            driver?.id || "",
+
+          assignedDriverName:
+            driver?.name ||
+            driver?.fullName ||
+            "",
+
+          assignedDriverPhone:
+            driver?.phone || "",
+
+          assignedDriverEmail:
+            driver?.email || "",
+
+          acceptedByDriver:
+            true,
+
+          acceptedAt:
+            new Date().toISOString(),
+
+          status: "Accepted",
+
+          orderStatus:
+            "Accepted",
+
+          updatedAt:
+            new Date().toISOString(),
+        };
+      }
+    );
+
+  saveDeliveries(
+    updated
+  );
+
+  return {
+    success: true,
+
+    message:
+      "Delivery accepted successfully.",
+
+    deliveries: updated,
+  };
+}
+
+
+/* ============================================
+   DRIVER RELEASE
+============================================ */
+
+export function releaseDelivery(
+  deliveryId,
+  driver
+) {
+  const deliveries =
+    getDeliveries();
+
+  const updated =
+    deliveries.map(
+      (delivery) => {
+        if (
+          delivery.id !==
+          deliveryId
+        ) {
+          return delivery;
+        }
+
+        if (
+          delivery.assignedDriverId !==
+          driver?.id
+        ) {
+          return delivery;
+        }
+
+        return {
+          ...delivery,
+
+          assignedDriverId: "",
+          assignedDriverName: "",
+          assignedDriverPhone: "",
+          assignedDriverEmail: "",
+
+          acceptedByDriver:
+            false,
+
+          acceptedAt: null,
+
+          status: "Approved",
+          orderStatus: "Approved",
+
+          updatedAt:
+            new Date().toISOString(),
+        };
+      }
+    );
+
+  saveDeliveries(
+    updated
+  );
+
+  return updated;
+}
+
+
+/* ============================================
+   UPDATE STATUS
+============================================ */
+
+export function updateDeliveryStatus(
+  deliveryId,
+  status
+) {
+  const deliveries =
+    getDeliveries();
+
+  const now =
+    new Date().toISOString();
+
+  const updated =
+    deliveries.map(
+      (delivery) => {
+        if (
+          delivery.id !==
+          deliveryId
+        ) {
+          return delivery;
+        }
+
+        return {
+          ...delivery,
+
+          status,
+
+          orderStatus:
+            status,
+
+          deliveredAt:
+            status === "Delivered"
+              ? now
+              : delivery.deliveredAt,
+
+          updatedAt: now,
+        };
+      }
+    );
+
+  saveDeliveries(
+    updated
+  );
+
+  return updated;
 }

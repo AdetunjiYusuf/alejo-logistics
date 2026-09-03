@@ -1,34 +1,70 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import {
   getPricing,
   savePricing,
+  calculateDeliveryPrice,
 } from "../utils/pricingStorage";
+
+import Footer from "../components/Footer";
 
 import "./AdminPricing.css";
 
 function AdminPricing() {
-  const navigate = useNavigate();
-
-  const currentPricing = getPricing();
+  const navigate =
+    useNavigate();
 
   const [baseFee, setBaseFee] =
-    useState(
-      currentPricing?.baseFee ?? 1000
-    );
+    useState("");
 
   const [pricePerKm, setPricePerKm] =
-    useState(
-      currentPricing?.pricePerKm ?? 200
-    );
+    useState("");
 
   const [message, setMessage] =
     useState("");
 
-  const handleSave = (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    const authenticated =
+      localStorage.getItem(
+        "alejoAdminAuthenticated"
+      );
 
+    if (
+      authenticated !== "true"
+    ) {
+      navigate("/login");
+      return;
+    }
+
+    const pricing =
+      getPricing();
+
+    setBaseFee(
+      pricing.baseFee
+    );
+
+    setPricePerKm(
+      pricing.pricePerKm
+    );
+  }, [navigate]);
+
+  const preview =
+    calculateDeliveryPrice(
+      10,
+      {
+        baseFee,
+        pricePerKm,
+      }
+    );
+
+  function save() {
     const base =
       Number(baseFee);
 
@@ -40,7 +76,7 @@ function AdminPricing() {
       base < 0
     ) {
       setMessage(
-        "Enter a valid base price."
+        "Enter a valid base fee."
       );
       return;
     }
@@ -61,151 +97,186 @@ function AdminPricing() {
     });
 
     setMessage(
-      "Pricing saved successfully."
+      "Pricing updated successfully."
     );
-  };
+  }
+
+  function logout() {
+    localStorage.removeItem(
+      "alejoAdminAuthenticated"
+    );
+
+    navigate("/login");
+  }
 
   return (
     <div className="pricing-page">
 
-      <div className="pricing-card">
+      <header className="pricing-header">
 
-        <div className="pricing-header">
+        <div>
+          <span>
+            ALEJO LOGISTICS
+          </span>
 
-          <div>
-            <p>
-              ALEJO LOGISTICS
-            </p>
+          <h1>
+            Pricing Settings
+          </h1>
 
-            <h1>
-              Pricing Settings
-            </h1>
+          <p>
+            Control the delivery price
+            used by every new booking.
+          </p>
+        </div>
 
-            <span>
-              Set the delivery base price
-              and price charged per kilometer.
-            </span>
-          </div>
+        <div className="pricing-header-actions">
 
           <button
-            className="pricing-back"
             onClick={() =>
-              navigate("/admin")
+              navigate(
+                "/admin-dashboard"
+              )
             }
           >
-            ← Admin Dashboard
+            ← Dashboard
+          </button>
+
+          <button
+            onClick={logout}
+          >
+            Logout
           </button>
 
         </div>
 
-        {message && (
-          <div className="pricing-message">
-            {message}
-          </div>
-        )}
+      </header>
 
-        <form
-          onSubmit={handleSave}
-          className="pricing-form"
-        >
 
-          <div className="pricing-field">
+      <main className="pricing-main">
 
-            <label>
-              Base Price
-            </label>
+        <section className="pricing-card">
 
-            <p>
-              The starting price for every delivery.
-            </p>
+          <div className="pricing-card-heading">
 
-            <div className="pricing-input">
+            <div className="pricing-icon">
+              ₦
+            </div>
 
-              <span>
-                ₦
-              </span>
+            <div>
+              <h2>
+                Delivery Pricing
+              </h2>
 
-              <input
-                type="number"
-                min="0"
-                value={baseFee}
-                onChange={(e) =>
-                  setBaseFee(
-                    e.target.value
-                  )
-                }
-              />
-
+              <p>
+                Set the two values used
+                to calculate every delivery.
+              </p>
             </div>
 
           </div>
 
-          <div className="pricing-field">
+
+          <div className="pricing-form">
+
+            <label>
+              Base Fee
+
+              <span>
+                Starting charge for every delivery
+              </span>
+
+              <div className="money-input">
+                <b>₦</b>
+
+                <input
+                  type="number"
+                  min="0"
+                  value={baseFee}
+                  onChange={(e) =>
+                    setBaseFee(
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+            </label>
+
 
             <label>
               Price Per Kilometer
-            </label>
-
-            <p>
-              Amount added for every kilometer travelled.
-            </p>
-
-            <div className="pricing-input">
 
               <span>
-                ₦
+                Added for every kilometer travelled
               </span>
 
-              <input
-                type="number"
-                min="0"
-                value={pricePerKm}
-                onChange={(e) =>
-                  setPricePerKm(
-                    e.target.value
-                  )
-                }
-              />
+              <div className="money-input">
+                <b>₦</b>
 
-              <small>
-                / km
-              </small>
-
-            </div>
+                <input
+                  type="number"
+                  min="0"
+                  value={pricePerKm}
+                  onChange={(e) =>
+                    setPricePerKm(
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+            </label>
 
           </div>
 
-          <div className="pricing-example">
+
+          <div className="pricing-equation">
 
             <span>
-              Example
+              PRICE CALCULATION
             </span>
 
             <strong>
-              ₦
-              {Number(
+              Base Fee + (Distance × Price Per KM)
+            </strong>
+
+            <p>
+              Example for a 10 km delivery:
+              ₦{Number(
                 baseFee || 0
               ).toLocaleString()}
               {" + "}
-              (
-              {Number(
+              (10 × ₦{Number(
                 pricePerKm || 0
-              ).toLocaleString()}
-              × distance)
-            </strong>
+              ).toLocaleString()})
+              {" = "}
+              <b>
+                ₦{Number(
+                  preview || 0
+                ).toLocaleString()}
+              </b>
+            </p>
 
           </div>
 
+
+          {message && (
+            <div className="pricing-message">
+              {message}
+            </div>
+          )}
+
+
           <button
-            type="submit"
-            className="pricing-save"
+            className="save-pricing"
+            onClick={save}
           >
             Save Pricing
           </button>
 
-        </form>
+        </section>
 
-      </div>
+      </main>
+
+      <Footer />
 
     </div>
   );

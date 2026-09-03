@@ -1,5 +1,4 @@
-const PRICING_KEY =
-  "alejoPricing";
+const PRICING_KEY = "alejoPricing";
 
 const DEFAULT_PRICING = {
   baseFee: 1000,
@@ -8,44 +7,46 @@ const DEFAULT_PRICING = {
 
 export function getPricing() {
   try {
-    const saved =
-      localStorage.getItem(
-        PRICING_KEY
-      );
+    const saved = localStorage.getItem(
+      PRICING_KEY
+    );
 
     if (!saved) {
-      return DEFAULT_PRICING;
+      return {
+        ...DEFAULT_PRICING,
+      };
     }
 
-    const parsed =
-      JSON.parse(saved);
+    const parsed = JSON.parse(saved);
 
     return {
       baseFee:
-        Number(parsed.baseFee) ||
-        DEFAULT_PRICING.baseFee,
+        Number(parsed.baseFee) >= 0
+          ? Number(parsed.baseFee)
+          : DEFAULT_PRICING.baseFee,
 
       pricePerKm:
-        Number(parsed.pricePerKm) ||
-        DEFAULT_PRICING.pricePerKm,
+        Number(parsed.pricePerKm) >= 0
+          ? Number(parsed.pricePerKm)
+          : DEFAULT_PRICING.pricePerKm,
     };
-  } catch (error) {
-    console.error(
-      "Could not read pricing:",
-      error
-    );
-
-    return DEFAULT_PRICING;
+  } catch {
+    return {
+      ...DEFAULT_PRICING,
+    };
   }
 }
 
 export function savePricing(pricing) {
   const cleanPricing = {
     baseFee:
-      Number(pricing.baseFee) || 0,
+      Math.max(0, Number(pricing.baseFee) || 0),
 
     pricePerKm:
-      Number(pricing.pricePerKm) || 0,
+      Math.max(
+        0,
+        Number(pricing.pricePerKm) || 0
+      ),
   };
 
   localStorage.setItem(
@@ -61,16 +62,40 @@ export function calculateDeliveryPrice(
   pricing = getPricing()
 ) {
   const distance =
-    Number(distanceKm) || 0;
+    Math.max(
+      0,
+      Number(distanceKm) || 0
+    );
 
   const baseFee =
-    Number(pricing.baseFee) || 0;
+    Math.max(
+      0,
+      Number(pricing.baseFee) || 0
+    );
 
   const pricePerKm =
-    Number(pricing.pricePerKm) || 0;
+    Math.max(
+      0,
+      Number(pricing.pricePerKm) || 0
+    );
 
   return Math.round(
     baseFee +
       distance * pricePerKm
+  );
+}
+
+export function getExamplePrice() {
+  const pricing = getPricing();
+
+  return calculateDeliveryPrice(
+    10,
+    pricing
+  );
+}
+
+export function resetPricing() {
+  return savePricing(
+    DEFAULT_PRICING
   );
 }
